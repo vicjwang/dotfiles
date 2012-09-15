@@ -1,0 +1,25 @@
+#skip the startup message
+#startup_message off
+#
+##Automatically detach on hangup.
+autodetach on
+#
+##If a screen dies, don't freeze the whole screen waiting for it.
+nonblock on
+#
+##Change default scrollback value for new windows
+defscrollback 10000
+scrollback 10000
+#
+##start with visual bell as default
+vbell off
+vbell_msg "Bell on %t (%n)"
+#
+##look and feel
+caption always "%3n %t%? @%u%?%? [%h]%?%=%c"
+termcapinfo xterm 'hs:ts=\E]2;:fs=\007:ds=\E]2;screen\007'
+hardstatus alwaysignore
+hardstatus alwayslastline '%{gW}%-w%{.wb}%n %t%{-}%+w %=%{.w}'
+#
+##
+activity "Activity in %t (%n)"
