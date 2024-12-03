@@ -1,7 +1,7 @@
 set expandtab
-set shiftwidth=4
-set softtabstop=4
-set tabstop=4
+set shiftwidth=2
+set softtabstop=2
+set tabstop=2
 set smartindent
 
 autocmd FileType java setlocal noexpandtab
@@ -47,6 +47,10 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 inoremap jj <ESC>
+" CTRL+a conflicts with Screen so make CTRL+s increment number in Normal Mode.
+nnoremap <C-s> <C-a>
+" CTRL+i sometimes behaves like TAB so remap CTRL+J
+nnoremap <C-j> <C-i>
 
 " Uncomment the following to have Vim jump to the last position when                                                       
 " reopening a file
