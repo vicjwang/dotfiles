@@ -49,8 +49,8 @@ nnoremap <C-l> <C-w>l
 inoremap jj <ESC>
 " CTRL+a conflicts with Screen so make CTRL+s increment number in Normal Mode.
 nnoremap <C-s> <C-a>
-" CTRL+i sometimes behaves like TAB so remap CTRL+J
-nnoremap <C-j> <C-i>
+" CTRL+i sometimes behaves like TAB so remap CTRL+m
+nnoremap <C-m> <C-i>
 
 " Uncomment the following to have Vim jump to the last position when                                                       
 " reopening a file
