@@ -10,3 +10,7 @@ export PS1="\[^[[38;5;6m\]\d\[$(tput sgr0)\]\[^[[38;5;6m\] \[$(tput sgr0)\]\[^[[
  $ "
 
 alias cb='git symbolic-ref --short -q HEAD'
+
+# Ubuntu only
+#alias pbcopy=xclip
+#alias pbpaste="xclip -o"
