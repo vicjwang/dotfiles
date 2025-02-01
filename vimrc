@@ -3,6 +3,7 @@ set shiftwidth=2
 set softtabstop=2
 set tabstop=2
 set smartindent
+syntax on
 
 autocmd FileType java setlocal noexpandtab
 autocmd FileType python setlocal expandtab
@@ -58,3 +59,54 @@ if has("autocmd")
   au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$")
     \| exe "normal! g'\"" | endif
 endif
+
+" Flagging unecessary white space
+set list
+set listchars=trail:*
+
+" Plugins
+call plug#begin('~/.vim/plugged')  " Or wherever you want your plugins installed
+  Plug 'tmhedberg/SimpylFold'
+  Plug 'preservim/nerdtree'
+  Plug 'vim-scripts/indentpython.vim'
+call plug#end()
+
+" NERDTree
+" Open NERDTree on file open.
+autocmd VimEnter * NERDTree | wincmd p
+" Move cursor to NERDTree tab.
+nnoremap <C-n> :NERDTreeFind<CR>
+" Toggle NERDTree tab visibility.
+nnoremap <C-m> :NERDTreeToggle<CR>
+" Exit Vim if NERDTree is the only window remaining in the only tab.
+autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree() | call feedkeys(":quit\<CR>:\<BS>") | endif
+
+" SimpylFold
+set foldmethod=indent
+
+"## ALE ##
+" Enable ALE
+"let g:ale_enabled = 1
+
+" Python linters (choose one or more)
+"let g:ale_python_flake8_options = '--max-line-length=120' " Example flake8 options
+"let g:ale_python_pylint_options = '--disable=missing-module-docstring,invalid-name' " Example pylint options
+"let g:ale_python_mypy_options = '--ignore-missing-imports --follow-imports=silent'
+"
+"let g:ale_linters = {
+"\   'python': ['flake8', 'pylint', 'mypy'],
+"\}
+"
+"" Python fixers (for auto-fixing)
+"let g:ale_fixers = {
+"\   'python': ['autopep8', 'black', 'isort'],
+"\}
+"
+"" Automatically fix files on save (use with caution!)
+"let g:ale_fix_on_save = 1
+"
+"" Optional: Customize ALE's appearance
+"let g:ale_sign_column_always = 1  " Always show the sign column
+"let g:ale_set_quickfix = 1        " Use quickfix list for errors
+"let g:ale_set_loclist = 0         " Don't use location list (usually quickfix is better)
+"
