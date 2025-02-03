@@ -69,6 +69,9 @@ call plug#begin('~/.vim/plugged')  " Or wherever you want your plugins installed
   Plug 'tmhedberg/SimpylFold'
   Plug 'preservim/nerdtree'
   Plug 'vim-scripts/indentpython.vim'
+  Plug 'davidhalter/jedi-vim'
+"  Plug 'SirVer/ultisnips'  " Optional, but recommended
+  Plug 'ervandew/supertab'
 call plug#end()
 
 " NERDTree
@@ -109,4 +112,47 @@ set foldmethod=indent
 "let g:ale_sign_column_always = 1  " Always show the sign column
 "let g:ale_set_quickfix = 1        " Use quickfix list for errors
 "let g:ale_set_loclist = 0         " Don't use location list (usually quickfix is better)
-"
+
+
+" Jedi configuration (dynamic path)
+function! GetPoetryVirtualEnvPath()
+  let poetry_venv_path = system('poetry env info --path 2>/dev/null') " Suppress errors if no venv
+  " Remove any trailing newline
+  let poetry_venv_path = substitute(poetry_venv_path, '\n$', '', '')
+
+  if !empty(poetry_venv_path)
+    return poetry_venv_path . '/lib/python3.9/site-packages' " Adjust python version if needed
+  else
+    " Handle the case where no poetry environment is found (fallback)
+    " Option 1: Fallback to a global path (less ideal)
+    " return '/usr/local/lib/python3.9/site-packages' " Replace with your global site-packages
+    " Option 2: Return an empty string to disable Jedi if no venv (better)
+    return ''
+  endif
+endfunction
+
+let g:jedi_path = GetPoetryVirtualEnvPath()
+let g:jedi_auto_complete = 1 " Enable auto-completion
+let g:jedi_complete_function_parens = 1 " Add parentheses for functions
+let g:jedi_show_call_signatures = 1 " Show function call signatures
+
+" Update jedi_path on BufEnter (when opening a file) and DirChanged (when changing directories)
+autocmd BufEnter,DirChanged * let g:jedi_path = GetPoetryVirtualEnvPath()
+
+" The rest of your SuperTab and Jedi configuration (as in the previous example)
+let g:SuperTabDefaultCompletionType = "context"
+let g:SuperTabContextDefault = "<C-n>"
+let g:SuperTabForwardKey = '<Tab>'
+let g:SuperTabBackwardKey = '<S-Tab>'
+
+" ... (other Jedi key mappings, UltiSnips integration, etc.)
+
+" Optional: If using UltiSnips:
+"let g:UltiSnipsExpandTrigger = "<Tab>"
+"let g:UltiSnipsJumpForwardSnippet = "<Tab>"
+"let g:UltiSnipsJumpBackwardSnippet = "<S-Tab>"
+
+" Key mappings (recommended):
+nmap <leader>g :JediGoToDefinition<CR>
+nmap <leader>r :JediRename<CR>
+nmap <leader>d :JediDoc<CR>
