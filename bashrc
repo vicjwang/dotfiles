@@ -1,3 +1,9 @@
+# Make sure .bashrc is sourced from .bash_profile e.g.
+#if [ -f ~/.bashrc ]; then
+#  source ~/.bashrc
+#fi
+ 
+
 # bash prompt
 parse_git_branch() {
     # git branch in prompt.                                                                             
