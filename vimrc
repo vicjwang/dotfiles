@@ -72,6 +72,7 @@ call plug#begin('~/.vim/plugged')  " Or wherever you want your plugins installed
   Plug 'davidhalter/jedi-vim'
 "  Plug 'SirVer/ultisnips'  " Optional, but recommended
   Plug 'ervandew/supertab'
+  Plug 'dense-analysis/ale'
 call plug#end()
 
 " NERDTree
@@ -89,17 +90,17 @@ set foldmethod=indent
 
 "## ALE ##
 " Enable ALE
-"let g:ale_enabled = 1
+let g:ale_enabled = 1
 
 " Python linters (choose one or more)
-"let g:ale_python_flake8_options = '--max-line-length=120' " Example flake8 options
-"let g:ale_python_pylint_options = '--disable=missing-module-docstring,invalid-name' " Example pylint options
+let g:ale_python_flake8_options = '--max-line-length=120' " Example flake8 options
+let g:ale_python_pylint_options = '--disable=missing-module-docstring,invalid-name' " Example pylint options
 "let g:ale_python_mypy_options = '--ignore-missing-imports --follow-imports=silent'
-"
-"let g:ale_linters = {
-"\   'python': ['flake8', 'pylint', 'mypy'],
-"\}
-"
+
+let g:ale_linters = {
+\   'python': ['flake8', 'pylint'],
+\}
+
 "" Python fixers (for auto-fixing)
 "let g:ale_fixers = {
 "\   'python': ['autopep8', 'black', 'isort'],
@@ -108,10 +109,10 @@ set foldmethod=indent
 "" Automatically fix files on save (use with caution!)
 "let g:ale_fix_on_save = 1
 "
-"" Optional: Customize ALE's appearance
-"let g:ale_sign_column_always = 1  " Always show the sign column
-"let g:ale_set_quickfix = 1        " Use quickfix list for errors
-"let g:ale_set_loclist = 0         " Don't use location list (usually quickfix is better)
+" Optional: Customize ALE's appearance
+let g:ale_sign_column_always = 1  " Always show the sign column
+let g:ale_set_quickfix = 1        " Use quickfix list for errors
+let g:ale_set_loclist = 0         " Don't use location list (usually quickfix is better)
 
 
 " Jedi configuration (dynamic path)
