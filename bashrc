@@ -1,7 +1,8 @@
-# Make sure .bashrc is sourced from .bash_profile e.g.
-#if [ -f ~/.bashrc ]; then
-#  source ~/.bashrc
-#fi
+# Make sure .bashrc is sourced from .bash_profile
+#  e.g. Put this snippet in ~/.bash_profile:
+#  if [ -f ~/.bashrc ]; then
+#    source ~/.bashrc
+#  fi
  
 
 # bash prompt
