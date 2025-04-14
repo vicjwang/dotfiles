@@ -1,0 +1,101 @@
+---
+description: 
+globs: *test*
+alwaysApply: false
+---
+ ---
+description: Encourages using the Arrange, Act, Assert (AAA) pattern in unit tests for clarity and consistency.
+globs: ['**/*.{test,spec}.{ts,tsx,js,jsx}', '**/tests/**/*.{ts,tsx,js,jsx}', '**/__tests__/**/*.{ts,tsx,js,jsx}']
+alwaysApply: false
+---
+# Arrange, Act, Assert (AAA) Pattern for Unit Tests
+
+This rule promotes the use of the Arrange, Act, Assert (AAA) pattern when writing unit tests. This structure makes tests more readable, understandable, and maintainable by clearly separating the setup, execution, and verification steps.
+
+## Guideline
+
+Structure your unit tests into three distinct sections:
+
+1.  **Arrange:** Set up all preconditions and inputs needed for the test. This includes:
+    *   Initializing variables.
+    *   Creating mock objects or stubs.
+    *   Setting up initial state.
+    *   Use comments (`// Arrange`) or blank lines to clearly delineate this section.
+
+2.  **Act:** Execute the specific piece of code (function, method) that you are testing. This should ideally be a single, focused action.
+    *   Use comments (`// Act`) or blank lines to clearly delineate this section.
+
+3.  **Assert:** Verify that the outcome of the 'Act' step matches your expectations. This involves:
+    *   Using assertion functions (`expect`, `assert`, etc.) to check output values, state changes, or mock interactions.
+    *   Having one or more assertions that confirm the expected behavior.
+    *   Use comments (`// Assert`) or blank lines to clearly delineate this section.
+
+## Examples
+
+Consider a simple `add` function:
+
+```typescript
+// src/mathUtils.ts
+export function add(a: number, b: number): number {
+  return a + b;
+}
+```
+
+✅ **Good (AAA Pattern):**
+
+```typescript
+// src/mathUtils.test.ts
+import { add } from './mathUtils';
+
+describe('add function', () => {
+  it('should return the sum of two positive numbers', () => {
+    // Arrange
+    const num1 = 5;
+    const num2 = 10;
+    const expectedSum = 15;
+
+    // Act
+    const result = add(num1, num2);
+
+    // Assert
+    expect(result).toBe(expectedSum);
+  });
+
+  it('should return the sum involving a negative number', () => {
+    // Arrange
+    const num1 = -5;
+    const num2 = 10;
+
+    // Act
+    const result = add(num1, num2);
+
+    // Assert
+    expect(result).toBe(5);
+  });
+});
+```
+
+❌ **Bad (Mixed Concerns):**
+
+```typescript
+// src/mathUtils.test.ts
+import { add } from './mathUtils';
+
+describe('add function', () => {
+  it('tests addition', () => {
+    // Mixed setup, execution, and assertions without clear separation
+    const num1 = 5;
+    expect(add(num1, 10)).toBe(15); // Act and Assert combined with Arrange
+    const num2 = -3;
+    const result = add(num1, num2); // Act might happen before all setup or after some asserts
+    expect(result).toBe(2); // Assert
+  });
+});
+```
+
+## Rationale
+
+-   **Readability:** Clearly separated sections make it easy to understand what the test is setting up, what it's doing, and what it's verifying.
+-   **Maintainability:** When a test fails, the structure helps pinpoint whether the issue lies in the setup (Arrange), the code under test (Act), or the verification logic (Assert).
+-   **Consistency:** Applying a standard pattern across all tests makes the test suite easier to navigate and understand.
+-   **Focus:** Encourages testing one specific behavior or scenario per test case. 

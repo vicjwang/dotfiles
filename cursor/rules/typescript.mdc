@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+For typescript files, do not end lines with a semicolon.
+
+Rule Name: typescript-eslint.mdc
+Description: 
+# TypeScript ESLint Type Checking Rules
+
+## Configuration
+- All TypeScript files must use strict type checking with `@typescript-eslint`
+- The TypeScript version should be >=4.7.4 <5.6.0 for compatibility with `@typescript-eslint`
+
+## Key Rules
+- No explicit `any` types
+- All functions must have explicit return types
+- No floating promises (all promises must be handled)
+- No unsafe assignments, member access, calls, or returns
+- No misused promises
+- Template expressions must be properly typed
+- Unbound methods must be properly handled
+
+## Examples
+
+✅ Good:
+```typescript
+async function handleWebhook(event: WebhookEvent): Promise<Response> {
+  await processEvent(event)
+  return { success: true }
+}
+```
+
+❌ Bad:
+```typescript
+// Missing return type, floating promise
+async function handleWebhook(event: any) {
+  processEvent(event)
+  return { success: true }
+}
+```
+
+## Implementation
+- Uses `@typescript-eslint/parser` with project-wide type checking
+- Extends recommended TypeScript ESLint configs
+- Configured in `.eslintrc.js` with proper parser options

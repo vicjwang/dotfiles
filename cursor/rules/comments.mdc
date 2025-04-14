@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Comments should always describe relevant lines of code directly underneath.
+globs: **/*.{ts,tsx,js,jsx,py,rb,go,java,c,cpp,cs,php} # Apply to common code files
+alwaysApply: false
+---
+# Comment Placement Rule
+
+Comments are essential for understanding code, but their placement matters significantly for clarity. This rule ensures comments are directly associated with the code they explain.
+
+## Guideline
+
+- **Comments must immediately precede the line(s) of code they describe.**
+- There should be **no blank lines** between a comment and the code it refers to.
+- Comments should not be placed above irrelevant code, blank lines, or other comments that they do not relate to.
+
+## Examples
+
+✅ **Good:**
+
+```typescript
+// Calculate the total price by summing item prices
+const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
+
+// Check if the user is logged in before proceeding
+if (isUserLoggedIn) {
+  // Fetch user-specific data
+  fetchUserData(userId);
+}
+```
+
+❌ **Bad:**
+
+```typescript
+// Calculate the total price by summing item prices
+
+const totalPrice = items.reduce((sum, item) => sum + item.price, 0); // Comment is separated by a blank line
+
+if (isUserLoggedIn) {
+  // Check if the user is logged in before proceeding <-- Comment describes the 'if' statement, not the line below
+  // Fetch user-specific data
+  fetchUserData(userId);
+}
+
+// This comment is floating and doesn't describe the immediate next line
+import { SomeModule } from './some-module';
+```
+
+## Rationale
+
+Placing comments directly above the relevant code block ensures that the explanation is tightly coupled with the implementation detail it describes. This improves readability and reduces the chance of comments becoming outdated or misleading when code is refactored. Avoiding blank lines between the comment and code reinforces this connection.

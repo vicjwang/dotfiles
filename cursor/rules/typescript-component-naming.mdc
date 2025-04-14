@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# TypeScript Component Naming Convention
+
+React components in TypeScript should always use **TitleCase** for their names. This applies to both function components and class components. The filename containing the component should also use TitleCase.
+
+## Component Naming
+
+✅ **Good:**
+
+```typescript
+// Inside MyComponent.tsx
+function MyComponent(props: MyComponentProps): JSX.Element {
+  // ... component logic
+}
+
+// Inside UserProfile.tsx
+class UserProfile extends React.Component<UserProfileProps> {
+  // ... component logic
+}
+```
+
+❌ **Bad:**
+
+```typescript
+// Inside myComponent.tsx or someOtherName.tsx
+function myComponent(props: MyComponentProps): JSX.Element { // Should be MyComponent
+  // ... component logic
+}
+
+// Inside userProfile.tsx or someOtherName.tsx
+class userProfile extends React.Component<UserProfileProps> { // Should be UserProfile
+  // ... component logic
+}
+```
+
+## File Naming
+
+- The file containing a React component should be named using TitleCase, matching the component name.
+- Use the `.tsx` extension for files containing JSX.
+
+✅ **Good:**
+- `MyComponent.tsx`
+- `UserProfile.tsx`
+- `DataGrid.tsx`
+
+❌ **Bad:**
+- `myComponent.tsx`
+- `userProfile.tsx`
+- `data_grid.tsx`
+- `my-component.tsx`
+- `MyComponent.ts` (if it contains JSX)
+
+
+## Rationale
+
+Using TitleCase for component names and their corresponding filenames is a standard convention in the React ecosystem. It helps distinguish components from regular functions or variables and improves code organization and readability. It also aligns with how JSX interprets element types (lowercase names are treated as HTML elements, uppercase names are treated as components).

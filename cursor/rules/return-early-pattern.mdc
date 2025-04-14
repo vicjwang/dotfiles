@@ -1,0 +1,105 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Encourages using the 'Return Early' pattern to reduce nested code blocks and improve readability.
+globs: **/*.{ts,tsx,js,jsx,py,rb,go,java,c,cpp,cs,php} # Apply to common code files
+alwaysApply: false
+---
+# Return Early Pattern (Guard Clauses)
+
+This rule encourages writing functions or methods so that the expected positive result is returned at the very end, and the execution is terminated early (by returning or throwing an exception) when prerequisite conditions are not met. This pattern, often implemented using "Guard Clauses", significantly reduces nesting and improves code clarity.
+
+See also: [Return Early Pattern by Leonel Menaia Dev](https://medium.com/swlh/return-early-pattern-3d18a41bba8)
+
+## Guideline
+
+- **Validate preconditions upfront:** Check for invalid inputs, permissions, or states at the beginning of the function.
+- **Exit immediately on failure:** If a precondition is not met, return a default value, error code, or throw an exception immediately. Avoid using `else` blocks for the main logic flow.
+- **Keep the "happy path" linear:** The main logic of the function, assuming all preconditions are met, should follow the guard clauses with minimal indentation.
+- **Avoid deep nesting:** The primary goal is to prevent arrow-shaped code (`if { if { if ... } }`).
+
+## Examples
+
+Consider a function to process an order:
+
+❌ **Bad (Nested):**
+
+```typescript
+function processOrder(order: Order | null, user: User): ProcessResult {
+  if (order !== null) {
+    if (user.isVerified) {
+      if (order.items.length > 0) {
+        // --- Main Logic ---
+        const processedItems = order.items.map(item => processItem(item));
+        const finalPrice = calculateTotalPrice(processedItems);
+        if (finalPrice > 0) {
+            logOrder(order.id, finalPrice);
+            return { success: true, price: finalPrice };
+        } else {
+            // Error handling deep inside
+            console.error("Price calculation failed for order:", order.id);
+            return { success: false, error: "Price calculation failed" };
+        }
+        // --- End Main Logic ---
+      } else {
+        console.error("Order has no items:", order.id);
+        return { success: false, error: "Order has no items" };
+      }
+    } else {
+      console.error("User not verified:", user.id);
+      return { success: false, error: "User not verified" };
+    }
+  } else {
+    console.error("Order is null");
+    return { success: false, error: "Invalid order" };
+  }
+}
+```
+
+✅ **Good (Return Early):**
+
+```typescript
+function processOrder(order: Order | null, user: User): ProcessResult {
+  // Guard clause for null order
+  if (order === null) {
+    console.error("Order is null");
+    return { success: false, error: "Invalid order" };
+  }
+
+  // Guard clause for user verification
+  if (!user.isVerified) {
+    console.error("User not verified:", user.id);
+    return { success: false, error: "User not verified" };
+  }
+
+  // Guard clause for empty order
+  if (order.items.length === 0) {
+    console.error("Order has no items:", order.id);
+    return { success: false, error: "Order has no items" };
+  }
+
+  // --- Happy Path ---
+  const processedItems = order.items.map(item => processItem(item));
+  const finalPrice = calculateTotalPrice(processedItems);
+
+  // Guard clause for invalid price
+  if (finalPrice <= 0) {
+      console.error("Price calculation failed for order:", order.id);
+      return { success: false, error: "Price calculation failed" };
+  }
+
+  logOrder(order.id, finalPrice);
+  return { success: true, price: finalPrice };
+  // --- End Happy Path ---
+}
+```
+
+## Rationale
+
+- **Improved Readability:** Code becomes easier to read linearly, without tracking complex nested conditions. The primary execution path ("happy path") is clear.
+- **Reduced Complexity:** Lowers cyclomatic complexity, making the code easier to understand and maintain.
+- **Easier Debugging:** Failures happen close to the checks, simplifying debugging. Error handling is consolidated at the beginning.
+- **Fail Fast:** Adheres to the "Fail Fast" principle by identifying invalid states or inputs early.
