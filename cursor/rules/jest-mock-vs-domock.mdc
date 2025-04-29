@@ -1,0 +1,81 @@
+# Jest Mocking: `jest.mock()` vs `jest.doMock()`
+
+Understanding hoisting is crucial when mocking modules in Jest, especially when your mock factory depends on variables defined within the test file.
+
+## Hoisting in Jest
+
+Jest automatically hoists `jest.mock()` calls to the top of the module *before* imports are processed. This allows Jest to replace the module being mocked before any code (including the module under test) actually tries to import it.
+
+## `jest.mock(moduleName, factory?)`
+
+-   **Behavior:** Hoisted to the top of the module.
+-   **Use Case:** The standard way to mock a module. Ideal when:
+    -   You are using Jest's automatic mocking (no factory function provided).
+    -   Your mock factory function does *not* rely on any variables imported or defined within the test file itself.
+
+### Problem with Hoisting
+
+If your mock factory *does* rely on variables (like imported mock functions from a helper file), `jest.mock()` will fail because the factory runs *before* the imports, and the variables will be undefined.
+
+❌ **Bad (Hoisting Issue):**
+
+```typescript
+// helpers/mockUtils.ts
+export const mockImplementation = jest.fn();
+
+// myModule.test.ts
+import { mockImplementation } from '../helpers/mockUtils'; // Runs AFTER jest.mock factory
+
+// This factory runs BEFORE the import above due to hoisting
+jest.mock('../myModule', () => ({
+  myFunction: mockImplementation, // Error: mockImplementation is not defined here!
+}));
+
+import { myFunction } from '../myModule'; // Gets the (broken) mocked version
+
+test('should use mock', () => {
+  myFunction();
+  expect(mockImplementation).toHaveBeenCalled();
+});
+```
+
+## `jest.doMock(moduleName, factory?)`
+
+-   **Behavior:** **Not** hoisted. Runs exactly where it is placed in the code.
+-   **Use Case:** Used specifically to avoid hoisting issues when your mock factory *needs* to access variables that are defined or imported *before* the mock call.
+
+### Solution using `jest.doMock`
+
+Place `jest.doMock()` *after* the necessary imports.
+
+✅ **Good (Using `jest.doMock`):**
+
+```typescript
+// helpers/mockUtils.ts
+export const mockImplementation = jest.fn();
+
+// myModule.test.ts
+// Imports run first
+import { mockImplementation } from '../helpers/mockUtils';
+
+// jest.doMock runs AFTER the import, so mockImplementation is defined
+jest.doMock('../myModule', () => ({
+  myFunction: mockImplementation, // Correctly defined
+}));
+
+// Import the module *after* jest.doMock has run
+// Note: Sometimes needs dynamic import() or require() if imports were already processed
+// Or structure imports carefully. Often easier to place service imports after doMock.
+import { myFunction } from '../myModule';
+
+test('should use mock', () => {
+  myFunction();
+  expect(mockImplementation).toHaveBeenCalled();
+});
+
+```
+
+## Summary
+
+-   Use `jest.mock()` by default.
+-   If your mock factory needs access to variables defined *before* it runs (like imported helpers), switch to `jest.doMock()` and place it after the relevant imports.

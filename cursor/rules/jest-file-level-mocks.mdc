@@ -1,0 +1,235 @@
+# Jest File-Level Module Mock Cleanup
+
+When using Jest's manual mocks via the `__mocks__` directory to mock modules that are instantiated at the file level, special care must be taken with mock cleanup.
+
+## Problem Description
+
+When a module is instantiated at the file level (outside of any function):
+
+1. The module instance is created when the file is first imported
+2. Subsequent imports reuse the same instance
+3. This can cause issues with `jest.clearAllMocks()` and similar utilities
+
+## Guidelines
+
+1. **Be aware of file-level instantiation patterns:**
+   - Singleton pattern implementations
+   - Modules with top-level instantiated exports
+   - React Context providers created at the file level
+
+2. **Understand the limitations of Jest cleanup methods:**
+   - `jest.clearAllMocks()` only clears the state of mock functions, not mock instances
+   - File-level module instances persist between tests even when mocks are cleared
+   - State within mock instances may leak between tests
+
+3. **Implement proper reset methods in your custom mocks:**
+   - Expose explicit reset functions in your mock implementation
+   - Reset internal state of mock instances, not just function call data
+
+## Examples
+
+### Problematic Pattern
+
+✅ **Module being mocked:**
+
+```typescript
+// api-client.ts
+class ApiClient {
+  private token: string | null = null;
+
+  setToken(token: string): void {
+    this.token = token;
+  }
+
+  getToken(): string | null {
+    return this.token;
+  }
+
+  // Other methods...
+}
+
+// Exported as a singleton, instantiated at file level
+export default new ApiClient();
+```
+
+❌ **Incorrect testing approach:**
+
+```typescript
+// Using custom mock in __mocks__/api-client.ts
+import { jest } from '@jest/globals';
+
+const apiClient = {
+  setToken: jest.fn(),
+  getToken: jest.fn(),
+  // Other methods...
+};
+
+export default apiClient;
+
+// In test file:
+jest.mock('../api-client');
+import apiClient from '../api-client';
+
+describe('Component using apiClient', () => {
+  afterEach(() => {
+    // This only clears the mock function calls
+    // but doesn't reset internal state of the mock singleton!
+    jest.clearAllMocks();
+  });
+
+  test('test one', () => {
+    apiClient.getToken.mockReturnValue('token123');
+    // Test implementation
+  });
+
+  test('test two', () => {
+    // This will still return 'token123' unless properly reset!
+    const token = apiClient.getToken();
+  });
+});
+```
+
+✅ **Better approach:**
+
+```typescript
+// In __mocks__/api-client.ts
+import { jest } from '@jest/globals';
+
+const apiClient = {
+  _internalState: {
+    token: null
+  },
+  setToken: jest.fn().mockImplementation(token => {
+    apiClient._internalState.token = token;
+  }),
+  getToken: jest.fn().mockImplementation(() => {
+    return apiClient._internalState.token;
+  }),
+  // Important reset method for tests
+  _reset: function() {
+    this._internalState.token = null;
+    this.setToken.mockClear();
+    this.getToken.mockClear();
+    // Reset other mocked methods...
+  }
+};
+
+export default apiClient;
+
+// In test file:
+jest.mock('../api-client');
+import apiClient from '../api-client';
+
+describe('Component using apiClient', () => {
+  afterEach(() => {
+    // Reset mock instance state, not just function calls
+    (apiClient as any)._reset();
+  });
+
+  test('test one', () => {
+    apiClient.setToken('token123');
+    expect(apiClient.getToken()).toBe('token123');
+  });
+
+  test('test two', () => {
+    // Token will be null here because we properly reset
+    expect(apiClient.getToken()).toBeNull();
+  });
+});
+```
+
+## Jest Reset Options Comparison
+
+| Method | What it does | File-level module impact |
+|--------|-------------|--------------------------|
+| `jest.clearAllMocks()` | Clears mock function call data | Doesn't reset module instance state |
+| `jest.resetAllMocks()` | Clears data and implementations | Doesn't reset module instance state |
+| `jest.restoreAllMocks()` | Restores original implementations | Doesn't reset module instance state |
+| Custom `_reset()` method | Whatever you implement | Can properly reset module instance state |
+
+## Rationale
+
+- **Test isolation**: Tests should be independent - state from one test should not affect another
+- **Predictable behavior**: Properly resetting mocks ensures consistent test behavior
+- **Explicit control**: Custom reset methods provide clear control over mock state
+
+## Important Note on `clearMocks` in `beforeEach`
+
+Using `jest.clearAllMocks()` or setting `clearMocks: true` in Jest config with `beforeEach` hooks presents additional challenges with file-level mocks:
+
+1. **Timing issues**: When using `beforeEach` to set up mock implementations, but relying on automatic mock clearing:
+   - The order becomes critical
+   - Your mock setup might be cleared by global `clearMocks` settings
+
+2. **Silent failures**: The most dangerous issue is that tests may appear to pass individually, but fail when run as a suite because:
+   - Mock implementations set in one test's `beforeEach` are cleared
+   - But the internal state of the module instance persists
+   - The mock function may return different values than expected
+
+### Example of `beforeEach` Problem
+
+❌ **Problematic setup with `beforeEach`:**
+
+```typescript
+// In Jest config: clearMocks: true
+
+jest.mock('../api-client');
+import apiClient from '../api-client';
+
+describe('First test suite', () => {
+  beforeEach(() => {
+    // This implementation will be cleared by clearMocks setting
+    // but any internal state set here will persist!
+    apiClient.getToken.mockReturnValue('mock-token-1');
+  });
+
+  test('uses token correctly', () => {
+    // Test passes in isolation but may fail in suite
+  });
+});
+
+describe('Second test suite', () => {
+  // No setup here, but will be affected by previous test's state
+
+  test('should have no token', () => {
+    // This might fail because state from first test persists
+    // even though the mock implementation was cleared
+  });
+});
+```
+
+✅ **Better approach with `beforeEach`:**
+
+```typescript
+jest.mock('../api-client');
+import apiClient from '../api-client';
+
+// Assume apiClient has a proper _reset method in its mock
+beforeEach(() => {
+  // First reset the entire mock instance state
+  (apiClient as any)._reset();
+
+  // Then set up mock implementations needed for this test group
+});
+
+describe('First test suite', () => {
+  beforeEach(() => {
+    // Setup specific to this test suite
+    apiClient.getToken.mockReturnValue('mock-token-1');
+  });
+
+  // Tests...
+});
+
+describe('Second test suite', () => {
+  // Each test starts with a clean slate
+  // Tests...
+});
+```
+
+### Best Practices for `beforeEach` with File-Level Mocks
+
+1. **Always reset first**: Call your custom reset method at the top level `beforeEach` before any test-specific setup
+2. **Avoid relying on `clearMocks` setting**: Explicitly control mock clearing rather than using global settings
+3. **Verify test isolation**: Run tests individually and as a suite to ensure they don't affect each other
+4. **Consider using Jest's `resetModules()`**: For particularly problematic modules, you might need to reset the entire module registry

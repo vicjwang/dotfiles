@@ -1,0 +1,275 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Guidelines for performing effective code reviews as a senior software engineer
+globs: **/*.{ts,tsx,js,jsx,py,rb,go,java,c,cpp,cs,php}
+alwaysApply: false
+---
+# Code Review Guidelines
+
+This rule outlines best practices for conducting thorough code reviews that improve code quality, readability, and maintainability.
+
+## Reviewer Mindset
+
+As a senior software engineer performing code reviews:
+- Approach each review with a constructive and educational mindset
+- Provide specific, actionable feedback that helps the author improve
+- Balance thoroughness with pragmatism - focus on important issues
+- Remember that code reviews are about the code, not the person
+- Always include concrete code suggestions when identifying issues
+
+## Key Focus Areas
+
+### 1. Logic Simplification
+
+Always look for opportunities to simplify complex logic:
+
+✅ **Good:**
+```typescript
+function isEligible(user: User): boolean {
+  // Guard clauses to return early
+  if (!user.isActive) return false;
+  if (user.age < 18) return false;
+  
+  // Simple, direct logic
+  return user.subscriptionType === 'premium';
+}
+```
+
+❌ **Bad:**
+```typescript
+function isEligible(user: User): boolean {
+  let isEligible = false;
+  
+  if (user.isActive) {
+    if (user.age >= 18) {
+      if (user.subscriptionType === 'premium') {
+        isEligible = true;
+      }
+    }
+  }
+  
+  return isEligible;
+}
+```
+
+### 2. DRY (Don't Repeat Yourself)
+
+Identify and eliminate code duplication:
+
+✅ **Good:**
+```typescript
+function validateInput(input: string): ValidationResult {
+  const trimmed = input.trim();
+  
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Input cannot be empty' };
+  }
+  
+  if (trimmed.length < 3) {
+    return { valid: false, error: 'Input must be at least 3 characters' };
+  }
+  
+  return { valid: true };
+}
+```
+
+❌ **Bad:**
+```typescript
+function validateName(name: string): ValidationResult {
+  const trimmed = name.trim();
+  
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Name cannot be empty' };
+  }
+  
+  if (trimmed.length < 3) {
+    return { valid: false, error: 'Name must be at least 3 characters' };
+  }
+  
+  return { valid: true };
+}
+
+function validateTitle(title: string): ValidationResult {
+  const trimmed = title.trim();
+  
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Title cannot be empty' };
+  }
+  
+  if (trimmed.length < 3) {
+    return { valid: false, error: 'Title must be at least 3 characters' };
+  }
+  
+  return { valid: true };
+}
+```
+
+### 3. Comment Quality
+
+Ensure comments are relevant, accurate, and add value:
+
+✅ **Good:**
+```typescript
+// Calculate the price with volume discount based on quantity
+function calculateDiscountedPrice(unitPrice: number, quantity: number): number {
+  const discountRate = determineDiscountRate(quantity);
+  return unitPrice * quantity * (1 - discountRate);
+}
+```
+
+❌ **Bad:**
+```typescript
+// Get the price
+// TODO: Add discount later
+// This function returns the final price
+function calculateDiscountedPrice(unitPrice: number, quantity: number): number {
+  // Multiply unit price by quantity
+  const total = unitPrice * quantity;
+  
+  // Determine discount rate
+  const discountRate = determineDiscountRate(quantity);
+  
+  // Apply discount
+  return total * (1 - discountRate);
+}
+```
+
+### 4. Return Early Pattern
+
+Enforce the return early pattern to reduce nesting and improve readability:
+
+✅ **Good:**
+```typescript
+function processOrder(order: Order): ProcessResult {
+  if (!order.items || order.items.length === 0) {
+    return { success: false, error: 'Order has no items' };
+  }
+  
+  if (!order.shippingAddress) {
+    return { success: false, error: 'Shipping address is required' };
+  }
+  
+  if (!isValidPaymentMethod(order.paymentMethod)) {
+    return { success: false, error: 'Invalid payment method' };
+  }
+  
+  // Process the valid order
+  const result = submitOrderToSystem(order);
+  return { success: true, orderId: result.id };
+}
+```
+
+❌ **Bad:**
+```typescript
+function processOrder(order: Order): ProcessResult {
+  if (order.items && order.items.length > 0) {
+    if (order.shippingAddress) {
+      if (isValidPaymentMethod(order.paymentMethod)) {
+        // Process the valid order
+        const result = submitOrderToSystem(order);
+        return { success: true, orderId: result.id };
+      } else {
+        return { success: false, error: 'Invalid payment method' };
+      }
+    } else {
+      return { success: false, error: 'Shipping address is required' };
+    }
+  } else {
+    return { success: false, error: 'Order has no items' };
+  }
+}
+```
+
+### 5. Restoring Missing Logic
+
+Always check for and restore logic marked with "TODO: restore" comments:
+
+✅ **Good (Restored):**
+```typescript
+function calculateTotal(items: Item[]): number {
+  let total = 0;
+  
+  for (const item of items) {
+    // Apply discount for eligible items
+    if (item.isDiscountEligible) {
+      total += item.price * (1 - item.discountRate);
+    } else {
+      total += item.price;
+    }
+  }
+  
+  // Apply tax
+  total *= 1.08;
+  
+  return total;
+}
+```
+
+❌ **Bad (Unrestored):**
+```typescript
+function calculateTotal(items: Item[]): number {
+  let total = 0;
+  
+  for (const item of items) {
+    // TODO: restore
+    // if (item.isDiscountEligible) {
+    //   total += item.price * (1 - item.discountRate);
+    // } else {
+    //   total += item.price;
+    // }
+    total += item.price;
+  }
+  
+  // TODO: restore
+  // Apply tax
+  // total *= 1.08;
+  
+  return total;
+}
+```
+
+### 6. Boolean Variable Naming
+
+Ensure boolean variables and functions use the "is", "should", "can" prefix:
+
+✅ **Good:**
+```typescript
+const isActive = user.status === 'active';
+const shouldShowWarning = attempts > 3;
+const canEdit = user.hasPermission('edit');
+
+function isValidEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
+```
+
+❌ **Bad:**
+```typescript
+const active = user.status === 'active';
+const showWarning = attempts > 3;
+const editPermission = user.hasPermission('edit');
+
+function validateEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
+```
+
+## Final Checklist
+
+Before completing your review:
+
+1. Verify all required functionality is implemented
+2. Check for edge cases and potential errors
+3. Look for security vulnerabilities
+4. Ensure code follows project style guidelines
+5. Ask if tests should be included:
+   - Unit tests for individual functions
+   - Integration tests for component interactions
+   - End-to-end tests for critical flows
+6. **Confirm you've provided concrete code suggestions for all issues identified**
+
+Remember that the goal of code review is to improve code quality while fostering a collaborative, positive team culture. Provide constructive feedback with specific code improvements and be open to discussion.

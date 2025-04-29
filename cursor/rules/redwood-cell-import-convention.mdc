@@ -1,0 +1,41 @@
+---
+description: 
+globs: *.tsx,*.jsx
+alwaysApply: false
+---
+# RedwoodJS Cell Import Convention
+
+This rule ensures that RedwoodJS Cell components are imported using the framework's conventional path, pointing to the directory containing the Cell, rather than the specific `.tsx` file itself.
+
+## Guideline
+
+- **Import from the parent directory:** When importing a Cell component (e.g., `MyExampleCell`), the import path should point to the directory containing the cell (`src/components/MyExampleCell`), not the actual file (`src/components/MyExampleCell/MyExampleCell.tsx`).
+
+## Examples
+
+Consider a Cell named `UserProfileCell` located at `web/src/components/UserProfileCell/UserProfileCell.tsx`.
+
+✅ **Good:**
+
+```typescript
+// Import points to the directory
+import UserProfileCell from 'src/components/UserProfileCell'
+```
+
+❌ **Bad:**
+
+```typescript
+// Import points directly to the file, bypassing the convention
+import UserProfileCell from 'src/components/UserProfileCell/UserProfileCell'
+// Or (less common but also incorrect)
+import UserProfileCell from 'src/components/UserProfileCell/UserProfileCell.tsx'
+
+```
+
+## Rationale
+
+RedwoodJS is configured to automatically resolve imports from the Cell's parent directory to the correct Cell component file (e.g., `MyCell/MyCell.tsx`). Importing directly from the directory:
+
+1.  **Keeps imports cleaner and shorter.**
+2.  **Decouples the import path from the specific filename** within the Cell's directory (e.g., `MyCell.tsx`, `MyCell.web.tsx`). Redwood handles this resolution internally.
+3.  **Adheres to the standard RedwoodJS convention**, making the codebase more consistent and easier for developers familiar with the framework to navigate.  

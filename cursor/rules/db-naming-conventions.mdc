@@ -1,0 +1,93 @@
+---
+description: Defines naming conventions for database columns related to dates and datetimes using camelCase.
+globs: models/**/*.prisma # Adjust glob if your schema/model definitions are elsewhere
+alwaysApply: true
+---
+# Database Column Naming Conventions for Dates/Datetimes (camelCase)
+
+This rule standardizes the naming and interpretation of database columns that store date and time information, using camelCase.
+
+## Conventions
+
+1.  **DateTime Columns (`At` suffix):**
+    *   Columns whose names end in `At` (e.g., `createdAt`, `updatedAt`, `snapshotAt`, `processedAt`) represent specific points in time.
+    *   These columns **must** be stored using a database type that includes timezone information (e.g., `TIMESTAMP WITH TIME ZONE` in PostgreSQL, `DATETIME` with UTC convention in others). If the underlying database column uses a different casing (like snake_case), use mapping directives (e.g., `@map("created_at")` in Prisma).
+    *   The value stored in these columns **must** always be in **Coordinated Universal Time (UTC)**.
+    *   When reading or writing these values in the application, ensure they are treated as UTC instants (e.g., using standard JavaScript `Date` objects, which are internally UTC, or libraries like `date-fns` or `dayjs`).
+
+2.  **Date Columns (`Date` suffix):**
+    *   Columns whose names end in `Date` (e.g., `tradeDate`, `expiryDate`, `effectiveDate`, `reportDate`) represent calendar dates without a specific time component.
+    *   These columns **must** be stored using a database type appropriate for dates only (e.g., `DATE` in PostgreSQL). Use mapping directives if the database column name differs (e.g., `@map("trade_date")`).
+    *   These date values should be interpreted as representing the calendar date in the **US Eastern Timezone (`America/New_York`)**.
+    *   When interacting with these dates in the application, follow the `handle-dates.mdc` rule: parse the date string assuming it's midnight ET and preferably convert it to a UTC instant for reliable calculations or comparisons before potentially formatting it back to `YYYY-MM-DD` for display or storage.
+
+## Examples
+
+**Schema (e.g., Prisma - assuming model uses camelCase, mapping to snake_case in DB):**
+
+```prisma
+model TradingRecord {
+  id         Int      @id @default(autoincrement())
+  symbol     String
+  quantity   Int
+  tradeDate  DateTime @map("trade_date") @db.Date // Represents the trade date in ET
+  executedAt DateTime @map("executed_at") @db.TimestampTz // Represents the exact execution time in UTC
+  createdAt  DateTime @default(now()) @map("created_at") @db.TimestampTz // Record creation time in UTC
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.TimestampTz // Record update time in UTC
+}
+
+model MarketSnapshot {
+  id         Int      @id @default(autoincrement())
+  data       Json
+  snapshotAt DateTime @map("snapshot_at") @db.TimestampTz // Time the snapshot was taken in UTC
+}
+```
+
+**Application Code (Conceptual):**
+
+```typescript
+import { format } from 'date-fns'; // Assuming format is also imported
+import { zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz';
+
+// Reading a trade record
+const record = await prisma.tradingRecord.findUnique({ where: { id: 1 } });
+
+if (record) {
+  // tradeDate is a Date object representing midnight UTC on the day *after* the ET trade date if naive Date was used.
+  // OR, if Prisma handles it correctly based on @db.Date, it might be just the date part.
+  // *Safer Handling according to handle-dates.mdc:*
+  // Assuming prisma returns a JS Date object set to midnight UTC matching the date parts.
+  const tradeDateString = format(record.tradeDate, 'yyyy-MM-dd');
+  const tradeDateET = zonedTimeToUtc(tradeDateString, 'America/New_York'); // Get the correct UTC instant for the start of that day in ET.
+
+  console.log(`Trade occurred on (ET): ${formatInTimeZone(tradeDateET, 'America/New_York', 'yyyy-MM-dd')}`);
+  console.log(`Executed precisely at (UTC): ${record.executedAt.toISOString()}`); // Use camelCase here
+}
+
+// Creating a snapshot
+await prisma.marketSnapshot.create({
+  data: {
+    data: { price: 100 },
+    // snapshotAt is automatically handled if using a DB default or set explicit UTC time
+    snapshotAt: new Date() // Use camelCase here; JS Date is UTC
+  }
+});
+```
+
+## Case Sensitivity Caveats
+
+**Important:** While the general convention is camelCase for models and mapping to snake_case in the database, be aware of specific table inconsistencies:
+
+*   The `calcGreeks` table uses **camelCase** for its columns (e.g., `callDelta`, `callGamma`).
+*   The `optionchain` table uses **lowercase** for similar columns (e.g., `calldelta`, `callgamma`).
+
+Exercise caution when writing queries that involve or join these tables, ensuring you use the correct case for column names based on the specific table being accessed.
+
+## Rationale
+
+Consistent naming clearly communicates the type and expected timezone of date/time columns, reducing ambiguity and potential errors when interacting with the database across different parts of the application or different timezones. Storing datetimes in UTC is a best practice for avoiding timezone and DST issues. Defining a standard interpretation timezone for date-only columns (like ET) resolves ambiguity for business logic tied to specific regional dates. Using camelCase aligns with typical JavaScript/TypeScript naming conventions.
+```
+
+## Rationale
+
+Consistent naming clearly communicates the type and expected timezone of date/time columns, reducing ambiguity and potential errors when interacting with the database across different parts of the application or different timezones. Storing datetimes in UTC is a best practice for avoiding timezone and DST issues. Defining a standard interpretation timezone for date-only columns (like ET) resolves ambiguity for business logic tied to specific regional dates. Using camelCase aligns with typical JavaScript/TypeScript naming conventions.

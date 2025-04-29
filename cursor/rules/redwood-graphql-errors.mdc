@@ -1,0 +1,88 @@
+---
+description: 
+globs: api/src/functions/*.ts
+alwaysApply: false
+---
+ # Redwood GraphQL Error Types
+
+When throwing errors in Redwood GraphQL services, use the specialized error types from `@redwoodjs/graphql-server` rather than generic JavaScript `Error` objects. This ensures errors are properly formatted and passed through to the frontend even in production environments.
+
+## Guidelines
+
+1. **Import the appropriate error type**:
+   ```typescript
+   import { UserInputError, ValidationError, AuthenticationError, ForbiddenError } from '@redwoodjs/graphql-server'
+   ```
+
+2. **Choose the most specific error type for the situation**:
+   * `UserInputError`: For errors caused by invalid user input that can be fixed by the user changing their input
+   * `ValidationError`: Similar to UserInputError but specifically for form/data validation failures
+   * `AuthenticationError`: When a user isn't logged in but needs to be
+   * `ForbiddenError`: When a user is logged in but doesn't have the required permissions
+   * `ResolverError`: For general resolver errors that should be shown to the user
+
+3. **Include descriptive error messages that are safe to show to users** - avoid exposing sensitive implementation details
+
+## Examples
+
+✅ **Good:**
+
+```typescript
+// For invalid user input
+if (rows.length < 3 || columns.length < 2) {
+  throw new UserInputError(
+    `Not enough strike prices available to create vertical spreads. ` +
+    `Need at least 3 strikes between spot price (${spotPrice}) and target price (${targetPrice}).`
+  )
+}
+
+// For authentication issues
+if (!context.currentUser) {
+  throw new AuthenticationError('You must be logged in to perform this action')
+}
+
+// For permission issues
+if (!context.currentUser?.roles?.includes('admin')) {
+  throw new ForbiddenError('Only admins can perform this action')
+}
+
+// For validation issues
+if (!isValidEmail(email)) {
+  throw new ValidationError('Please provide a valid email address')
+}
+```
+
+❌ **Bad:**
+
+```typescript
+// Generic errors get sanitized in production
+if (rows.length < 3) {
+  throw new Error('Not enough data') // Will show as "Something went wrong" in production
+}
+
+// Exposing implementation details
+if (!user) {
+  throw new Error(`Failed to query user table: ${db.errorCode}`) // Exposes internals
+}
+```
+
+## Why This Matters
+
+1. **Error messages reach the frontend**: Unlike generic `Error` objects which get sanitized to "Something went wrong" in production, these specialized errors preserve their messages.
+
+2. **Better user experience**: Users see actionable error messages rather than generic failures.
+
+3. **Consistent error handling**: The frontend can handle different error types appropriately based on their nature.
+
+4. **Security**: Properly categorized errors help ensure sensitive information isn't accidentally exposed.
+
+## Implementation
+
+These error types work with Redwood's built-in frontend error handling in cells and forms. For example, in a cell's `Failure` component, you can extract the specific error message:
+
+```tsx
+export const Failure = ({ error }) => {
+  // This will show the detailed message in both development and production
+  return <div className="error-message">{error.message}</div>
+}
+``` 
