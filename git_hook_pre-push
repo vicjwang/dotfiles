@@ -1,0 +1,44 @@
+# place in .git/hooks/pre-push
+
+#!/bin/sh
+
+# --- List of directories to test ---
+# Add the paths to the directories you want to test to this list.
+# These paths will be passed as arguments to `yarn rw test`.
+DIRECTORIES_TO_TEST=(
+  "api/src/services/stripeCheckout/"
+  "api/src/services/stripePortal/"
+  "api/src/functions/stripeWebhook/"
+  "api/src/services/featureFlags/"
+  "api/src/services/profiles/profiles.test.ts"
+  "web/src/components/AttributionChart/"
+  "web/src/components/AttributionBChart/"
+  "web/src/components/FeatureFlag/FeatureFlagCell/"
+  "web/src/components/HedgeCharts/"
+)
+# --- End of directory list ---
+
+echo "Running tests in specified directories before push..."
+echo "----------------------------------------"
+
+# Use printf to output the array elements separated by newlines,
+# then pipe them to xargs. xargs will then pass them as arguments
+# to a single `yarn rw test` command.
+printf "%s\n" "${DIRECTORIES_TO_TEST[@]}" | xargs yarn rw test --no-watch
+
+# Check the exit code of the test command
+if [ $? -ne 0 ]; then
+  echo "----------------------------------------"
+  echo "Tests failed. Aborting push."
+  echo "----------------------------------------"
+  exit 1
+fi
+
+echo "----------------------------------------"
+echo "All specified tests passed. Continuing with push."
+echo "----------------------------------------"
+
+# Start vercel deploy listener on ngrok
+sudo ngrok service start
+python scripts/vercel-listener.py &
+exit 0
