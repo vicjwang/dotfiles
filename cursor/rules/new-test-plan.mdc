@@ -1,0 +1,91 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+---
+description: "Guidelines for creating comprehensive test plan documents, using the production deployment validation plan as a model."
+globs: "docs/**/*.md"
+alwaysApply: false
+---
+# Test Plan Creation Guidelines
+
+This document provides a standardized template for creating test plan documents. It ensures all critical aspects of testing are considered, from core functionality to performance and security. Use this guide when creating test plans for new features, major changes, or deployment validation.
+
+The structure is based on the [Production Deployment Validation Test Plan](mdc:docs/prod-checks.md).
+
+## Test Plan Structure Template
+
+A good test plan should be organized and comprehensive. Use the following sections as a template for your test plan document.
+
+### 1. Title
+Start with a clear, descriptive title.
+- **Example:** `New Feature X Integration Test Plan` or `Production Deployment Validation Test Plan`
+
+### 2. Overview
+Briefly describe the purpose of the test plan and what feature or deployment it covers.
+- **Example:** `This test plan validates that the new 'User Profile' feature is working correctly before production deployment.`
+
+### 3. Pre-Requisites / Pre-Deployment Checklist
+List any conditions that must be met before testing can begin.
+- **Example:**
+    - `[ ] Feature branch is deployed to the staging environment.`
+    - `[ ] All unit tests and integration tests are passing.`
+    - `[ ] Database migrations (if any) have been applied.`
+
+### 4. Core Functionality Tests
+This is the main section of your test plan. Break it down by sub-feature or user story. For each item, include:
+- **Priority:** Critical, High, Medium, Low.
+- **Test Steps:** A clear, numbered list of actions to perform.
+- **Expected Results:** A checklist of what should happen if the test passes.
+
+**Example Test Case Format:**
+
+> #### Feature ABC
+> **Priority: Critical**
+>
+> ##### Test Steps:
+> 1. Navigate to the feature page.
+> 2. Click the "Create New" button.
+> 3. Fill in the form with valid data.
+> 4. Click "Submit".
+>
+> ##### Expected Results:
+> - `[ ]` Form submission succeeds without errors.
+> - `[ ]` A confirmation message is displayed.
+> - `[ ]` The user is redirected to the details page for the new item.
+> - `[ ]` The new item appears in the list view.
+
+### 5. Cross-Cutting Concern Tests
+Include sections for tests that apply across the feature, similar to the production checklist. Adapt these as needed.
+- **API & Data Services:** Verify backend integrations.
+- **Navigation & Routing:** Ensure links and routes work.
+- **Performance & Loading:** Check for speed and responsiveness.
+- **Error Handling:** Test failure scenarios and user-friendly error messages.
+- **Security Validation:** Ensure data is protected and permissions are enforced.
+- **Mobile Responsiveness:** Verify layout on different screen sizes.
+### 6. Rollback Criteria
+Define the specific conditions under which the feature deployment would be considered a failure and should be rolled back.
+- **Example:**
+    - `Core feature functionality is broken.`
+    - `Causes a critical regression in another part of the application.`
+    - `Significant performance degradation.`
+
+### 7. Test Record
+Include a simple template at the end for testers to fill out, creating a record of the test execution.
+
+**Example Test Record Template:**
+
+> ### Test Execution Record
+> **Date:** ___________
+> **Tester:** ___________
+> **Environment:** Staging/Production
+>
+> #### Issues Found:
+> - Issue 1: ...
+>
+> #### Overall Status: [ ] PASS [ ] FAIL
+
+---
+
+By following this template, you ensure that test plans are consistent, thorough, and easy to follow, which improves the quality of releases.

@@ -17,6 +17,7 @@ Comments are essential for understanding code, but their placement matters signi
 - **Comments must immediately precede the line(s) of code they describe.**
 - There should be **no blank lines** between a comment and the code it refers to.
 - Comments should not be placed above irrelevant code, blank lines, or other comments that they do not relate to.
+- **No comments for imports are necessary.**
 
 ## Examples
 

@@ -1,0 +1,320 @@
+---
+description: Best practices for creating stable and reliable snapshot tests in RedwoodJS with React components
+globs: web/**/*.test.{ts,tsx}
+alwaysApply: false
+---
+# Snapshot Testing Best Practices
+
+This rule outlines the correct approach for creating snapshot tests in our RedwoodJS project, ensuring they are stable, reliable, and maintainable.
+
+## Required Mocks
+
+### 1. Mock window.matchMedia for Ant Design
+Always include this mock when testing components that use Ant Design:
+
+```typescript
+// Mock window.matchMedia for Ant Design
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+})
+```
+
+### 2. Mock ResizeObserver for Charts
+Include this mock when testing components with charts (Highcharts, etc.):
+
+```typescript
+// Mock ResizeObserver for charts
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}))
+```
+
+## Snapshot Serialization
+
+### 1. Use Custom Serializers for Dynamic Content
+Always normalize dynamic IDs and use HTML formatting for better readability:
+
+```typescript
+// Add custom snapshot serializer that normalizes dynamic IDs and formats HTML nicely
+expect.addSnapshotSerializer({
+  test: (val) => typeof val === 'string' && (val.includes('<') || val.includes('highcharts-')),
+  print: (val) => {
+    // Replace dynamic Highcharts IDs with static ones for consistent snapshots
+    const stringVal = val as string
+    const normalized = stringVal
+      .replace(/highcharts-[a-z0-9]+-/g, 'highcharts-mocked-id-')
+      .replace(/id="highcharts-[a-z0-9]+-\d+"/g, 'id="highcharts-mocked-id"')
+      .replace(/url\(#highcharts-[a-z0-9]+-\d+-?\)/g, 'url(#highcharts-mocked-id)')
+
+    // Use jest-serializer-html to format the HTML nicely
+    const jestSerializerHtml = require('jest-serializer-html')
+    return jestSerializerHtml.print(normalized)
+  },
+})
+```
+
+### 2. Normalize HTML Content in Tests
+Apply the same normalization logic within individual test cases:
+
+```typescript
+it('matches snapshot with mock data', async () => {
+  const { container } = render(<YourComponent />)
+
+  // Wait for any async rendering to complete
+  await new Promise((resolve) => setTimeout(resolve, 100))
+
+  // Get the HTML content and normalize dynamic IDs
+  const htmlContent = container.innerHTML
+  const normalizedHtml = htmlContent
+    .replace(/highcharts-[a-z0-9]+-/g, 'highcharts-mocked-id-')
+    .replace(/id="highcharts-[a-z0-9]+-\d+"/g, 'id="highcharts-mocked-id"')
+    .replace(/url\(#highcharts-[a-z0-9]+-\d+-?\)/g, 'url(#highcharts-mocked-id)')
+
+  expect(normalizedHtml).toMatchSnapshot()
+})
+```
+
+## Async Rendering
+
+### Always Wait for Async Operations
+Include a timeout to allow async rendering to complete:
+
+```typescript
+// Wait for any async rendering to complete
+await new Promise((resolve) => setTimeout(resolve, 100))
+```
+
+## Testing Patterns
+
+### 1. Test Both Direct Component and Stories
+Create comprehensive test coverage by testing both ways:
+
+✅ **Good:**
+
+```typescript
+import { render } from '@redwoodjs/testing/web'
+import { composeStories } from '@storybook/react'
+
+import YourComponent from './YourComponent'
+import { mockData } from './YourComponent.mock'
+import * as stories from './YourComponent.stories'
+
+const { Primary, WithoutData, EmptyState } = composeStories(stories)
+
+describe('YourComponent', () => {
+  // Test direct component with mock data
+  it('matches snapshot with mock data', async () => {
+    const { container } = render(<YourComponent data={mockData} />)
+    // ... normalization and assertion
+  })
+
+  // Test story compositions
+  it('Primary story matches snapshot', async () => {
+    const { container } = render(<Primary />)
+    // ... normalization and assertion
+  })
+})
+```
+
+### 2. Use Descriptive Test Names
+Make test names clear about what they're testing:
+
+✅ **Good:**
+```typescript
+it('matches snapshot with mock data')
+it('Primary story matches snapshot')
+it('EmptyData story matches snapshot')
+```
+
+❌ **Bad:**
+```typescript
+it('renders correctly')
+it('works')
+it('snapshot test')
+```
+
+## Mock Data Structure
+
+### Use Proper GraphQL Types
+Ensure mock data includes correct `__typename` fields:
+
+✅ **Good:**
+```typescript
+const mockData = [
+  {
+    __typename: 'YourGraphQLType' as const,
+    id: '1',
+    name: 'Test Item',
+    // ... other fields
+  }
+]
+```
+
+❌ **Bad:**
+```typescript
+const mockData = [
+  {
+    id: '1',
+    name: 'Test Item',
+    // Missing __typename
+  }
+]
+```
+
+## Common Pitfalls to Avoid
+
+### 1. Don't Test Without Proper Mocks
+❌ **Bad:**
+```typescript
+// Missing window.matchMedia mock - will fail with Ant Design components
+it('renders component', () => {
+  render(<ComponentWithAntDesign />)
+})
+```
+
+### 2. Don't Ignore Dynamic Content
+❌ **Bad:**
+```typescript
+// Not normalizing dynamic IDs - snapshots will be flaky
+expect(container.innerHTML).toMatchSnapshot()
+```
+
+### 3. Don't Skip Async Waiting
+❌ **Bad:**
+```typescript
+// Not waiting for async operations - may miss rendered content
+const { container } = render(<AsyncComponent />)
+expect(container.innerHTML).toMatchSnapshot() // Too early!
+```
+
+## RedwoodJS Cell Testing
+
+### Cell Mock Structure
+RedwoodJS Cell mocks have a specific structure that differs from component mocks:
+
+✅ **Good Cell Mock (`YourCell.mock.ts`):**
+```typescript
+// Define the mock data directly within the mockGraphQLQuery function
+export const mockGraphQLQuery = (
+  _vars?: { // Accept variables, even if not used in this static mock
+    ticker: string
+    tradeDate: string
+    expiryDate: string
+    strike: number
+    optionType: string
+  }
+) => ({
+  yourQueryData: [
+    {
+      __typename: 'YourGraphQLType' as const,
+      id: '1',
+      name: 'Test Data',
+      // ... other fields
+    },
+  ],
+})
+```
+
+❌ **Bad Cell Mock:**
+```typescript
+// DON'T export a 'standard' function for Cell mocks
+export const standard = () => mockGraphQLQuery()
+
+// DON'T export static objects
+export const standard = { yourQueryData: [...] }
+```
+
+### Cell Import Convention
+Always import Cells from their directory, not the specific file:
+
+✅ **Good:**
+```typescript
+import YourCell from 'src/components/YourCell'
+```
+
+❌ **Bad:**
+```typescript
+import YourCell from 'src/components/YourCell/YourCell'
+import YourCell from 'src/components/YourCell/YourCell.tsx'
+```
+
+### Testing Cell Components
+When testing Cells, you typically test them with their mock data:
+
+```typescript
+import { render } from '@redwoodjs/testing/web'
+import YourCell from 'src/components/YourCell'
+import { mockGraphQLQuery } from 'src/components/YourCell/YourCell.mock'
+
+describe('YourCell', () => {
+  it('matches snapshot with Success state', async () => {
+    const mockData = mockGraphQLQuery()
+    const { container } = render(
+      <YourCell.Success {...mockData} />
+    )
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    const normalizedHtml = container.innerHTML
+      .replace(/highcharts-[a-z0-9]+-/g, 'highcharts-mocked-id-')
+      .replace(/id="highcharts-[a-z0-9]+-\d+"/g, 'id="highcharts-mocked-id"')
+
+    expect(normalizedHtml).toMatchSnapshot()
+  })
+
+  it('matches snapshot with Loading state', () => {
+    const { container } = render(<YourCell.Loading />)
+    expect(container.innerHTML).toMatchSnapshot()
+  })
+
+  it('matches snapshot with Empty state', () => {
+    const { container } = render(<YourCell.Empty />)
+    expect(container.innerHTML).toMatchSnapshot()
+  })
+
+  it('matches snapshot with Failure state', () => {
+    const { container } = render(
+      <YourCell.Failure error={new Error('Test error')} />
+    )
+    expect(container.innerHTML).toMatchSnapshot()
+  })
+})
+```
+
+### Key Cell Testing Differences
+
+1. **No `standard` export** - Cell mocks only export `mockGraphQLQuery`
+2. **Test all Cell states** - Loading, Success, Empty, Failure
+3. **Import from directory** - Follow RedwoodJS Cell import convention
+4. **Mock variables** - Cell mocks accept query variables (even if unused)
+
+## Required Dependencies
+
+Ensure these dependencies are available:
+
+```typescript
+import { render } from '@redwoodjs/testing/web'
+import { composeStories } from '@storybook/react'
+// For HTML formatting:
+const jestSerializerHtml = require('jest-serializer-html')
+```
+
+## Benefits
+
+Following these practices ensures:
+- **Stable snapshots** that don't change due to dynamic IDs
+- **Readable diffs** when snapshots do change
+- **Comprehensive coverage** testing both component and story variations
+- **Reliable tests** that account for async rendering and required mocks

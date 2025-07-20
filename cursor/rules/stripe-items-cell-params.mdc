@@ -1,0 +1,82 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+---
+description: Explains how to use the 'params' prop to filter items in StripeItemsCell.
+globs: web/src/components/StripeItemsCell/StripeItemsCell.tsx
+alwaysApply: false
+---
+# Filtering StripeItemsCell with the 'params' Prop
+
+The `StripeItemsCell` component fetches and displays Stripe products and their prices. It uses a `params` prop to filter which items are retrieved. This filtering is done at the GraphQL resolver level based on the provided parameters.
+
+## `params` Prop Structure
+
+The `params` prop is an object that can contain two main keys:
+1.  `productParams`: Used to filter Stripe Products.
+2.  `priceParams`: Used to filter Stripe Prices associated with the products.
+
+These parameters are passed directly to the `stripeItems` GraphQL query.
+
+### Example Usage
+
+Here's an example from `web/src/pages/UpgradeToProPage/UpgradeToProPage.tsx`:
+
+```typescript
+// web/src/pages/UpgradeToProPage/UpgradeToProPage.tsx
+// ...
+import StripeItemsCell from 'src/components/StripeItemsCell' // Assuming conventional import
+// ...
+
+const frequency = { value: 'annually', interval: 'year', /* ... */ }; // Example frequency state
+
+// ...
+          <StripeItemsCell
+            params={{
+              productParams: { active: true }, // Fetch only active products
+              priceParams: {
+                type: 'recurring',            // Fetch only recurring prices
+                recurring: { interval: frequency.interval }, // Filter by billing interval (e.g., 'year' or 'month')
+              },
+            }}
+            // ... other props
+          />
+// ...
+```
+
+## How it Works
+
+1.  The `params` object provided to `StripeItemsCell` is passed as an argument to the `stripeItems` GraphQL query.
+    ```graphql
+    // web/src/components/StripeItemsCell/StripeItemsCell.tsx (Conceptual Query)
+    query StripeItems($params: StripeItemsParamsInput) {
+      stripeItems(params: $params) {
+        // ...fields
+      }
+    }
+    ```
+2.  The backend resolver for `stripeItems` then uses these `productParams` and `priceParams` to query the Stripe API (e.g., listing products with `active: true` and then filtering their prices based on `type` and `recurring.interval`).
+
+## Available Filter Parameters
+
+The available filter parameters depend on the Stripe API capabilities for listing products and prices. Common parameters include:
+
+**For `productParams` (maps to Stripe's `ProductListParams`):**
+*   `active`: `boolean` (e.g., `true` to get only active products)
+*   `ids`: `string[]` (list of product IDs to retrieve)
+*   `shippable`: `boolean`
+*   And more, corresponding to Stripe's API.
+
+**For `priceParams` (maps to Stripe's `PriceListParams`):**
+*   `active`: `boolean`
+*   `currency`: `string` (e.g., `'usd'`)
+*   `product`: `string` (Product ID - often handled internally by the cell when fetching prices for products)
+*   `recurring`: `object`
+    *   `interval`: `'day' | 'week' | 'month' | 'year'`
+    *   `usage_type`: `'metered' | 'licensed'`
+*   `type`: `'one_time' | 'recurring'`
+*   And more, corresponding to Stripe's API.
+
+Refer to the Stripe API documentation for a complete list of filterable parameters for products and prices. The backend resolver for `stripeItems` will determine exactly which of these are supported.

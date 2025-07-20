@@ -1,0 +1,107 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Defines the standard process for creating a new page in the RedwoodJS project, ensuring layout usage and conventions.
+globs: web/src/pages/**/*Page/ *Page.{tsx,test.tsx,stories.tsx}
+alwaysApply: false
+---
+
+# RedwoodJS Page Creation Standard
+
+This rule outlines the standard procedure and best practices for creating new pages within this RedwoodJS application. Following these steps ensures consistency, adherence to framework conventions, and proper integration with the existing layout structure.
+
+## Guideline
+
+1.  **Use the Redwood Generator:** Always use the Redwood CLI to generate new pages. This ensures all necessary files (Page, Route, Test, Storybook) are created correctly.
+    ```bash
+    yarn rw generate page <PageName> [/optional/path]
+    ```
+    - Replace `<PageName>` with the desired name in **TitleCase** (e.g., `UserProfile`, `OrderHistory`).
+    - The generator automatically appends `Page` to the component and file name (e.g., `UserProfilePage.tsx`).
+    - The optional `/path` specifies the URL route for the page. If omitted, it defaults to `/page-name`.
+
+2.  **File Location:** Generated page components will reside in `web/src/pages/<PageName>Page/`. For example, `yarn rw g page UserProfile` creates `web/src/pages/UserProfilePage/UserProfilePage.tsx`.
+
+3.  **Component Naming:** The generated page component will follow TitleCase naming conventions (e.g., `UserProfilePage`).
+
+4.  **Layout Integration:** Ensure the generated page component uses the standard `GlobalLayout`. The generator typically handles this, but verify that the page content is rendered within the layout.
+    *   The page component should *not* typically include `<html>`, `<body>`, or `<head>` tags, as these are managed by the layout.
+    *   The component should return the specific JSX for that page's content.
+
+5.  **Route Definition:** The generator adds a `<Route>` entry in `web/src/Routes.tsx`. Verify this route uses the correct page component and path. It should be wrapped within the `<Set>` that applies the `GlobalLayout`.
+
+    ```typescript
+    // Example in web/src/Routes.tsx
+    import { Set, Router, Route } from '@redwoodjs/router'
+    import GlobalLayout from 'src/layouts/GlobalLayout/GlobalLayout' // Correct import path
+
+    // ... other imports
+
+    const Routes = () => {
+      return (
+        <Router>
+          {/* Apply GlobalLayout to these routes */}
+          <Set wrap={GlobalLayout}>
+            <Route path="/user-profile" page={UserProfilePage} name="userProfile" />
+            {/* Other routes using GlobalLayout */}
+            <Route notfound page={NotFoundPage} />
+          </Set>
+          {/* Routes without GlobalLayout (e.g., auth pages) can be outside */}
+          <Route path="/login" page={LoginPage} name="login" />
+        </Router>
+      )
+    }
+    ```
+
+6.  **Cell Usage:** If the page needs to fetch data, generate and use a Redwood Cell component (`yarn rw generate cell <CellName>`) instead of fetching data directly within the page component.
+
+## Examples
+
+✅ **Good:**
+
+1.  Generate the page:
+    ```bash
+    yarn rw generate page UserSettings /settings
+    ```
+2.  Verify `web/src/pages/UserSettingsPage/UserSettingsPage.tsx`:
+    ```typescript
+    import { MetaTags } from '@redwoodjs/web'
+    // Potentially import a Cell for data
+    // import UserSettingsCell from 'src/components/UserSettingsCell'
+
+    const UserSettingsPage = () => {
+      return (
+        <>
+          <MetaTags title="User Settings" description="Manage your settings" />
+
+          <h1>User Settings</h1>
+          {/* Page-specific content */}
+          {/* <UserSettingsCell /> */}
+        </>
+      )
+    }
+
+    export default UserSettingsPage
+    ```
+3.  Verify `web/src/Routes.tsx` includes the route within the `GlobalLayout` set:
+    ```typescript
+    <Set wrap={GlobalLayout}>
+      {/* ... other routes ... */}
+      <Route path="/settings" page={UserSettingsPage} name="userSettings" />
+    </Set>
+    ```
+
+❌ **Bad:**
+
+1.  Manually creating `web/src/pages/MyManualPage.tsx` without using the generator.
+2.  Naming the page component `userSettingsPage` (lowercase).
+3.  Having the `UserSettingsPage` component render its own `<html>` or `<nav>` elements instead of relying on `GlobalLayout`.
+4.  Placing the `<Route>` for `UserSettingsPage` outside the `<Set wrap={GlobalLayout}>` in `Routes.tsx` (unless intentionally designed to not use the global layout).
+5.  Fetching data directly within the `UserSettingsPage` using `useEffect` and `fetch` instead of a Cell.
+
+## Rationale
+
+Using the Redwood generators ensures consistency, reduces boilerplate, and leverages the framework's conventions for routing, layout wrapping, and data fetching (Cells). Adhering to naming and layout standards makes the codebase easier to navigate and maintain. The `GlobalLayout` provides a consistent user interface shell across different pages.

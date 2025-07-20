@@ -1,0 +1,157 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Standardizes the handling of date-only values (YYYY-MM-DD) by assuming they represent dates in US Eastern Time (ET).
+globs: **/*.{ts,tsx,js,jsx} # Apply to TypeScript/JavaScript files
+alwaysApply: false
+---
+# Handling Date-Only Values (YYYY-MM-DD) Assuming US Eastern Time
+
+This rule specifies that all date-only strings (e.g., `YYYY-MM-DD`) encountered in the codebase should be interpreted as representing the calendar date in the **US Eastern Timezone** (specifically `America/New_York`). This prevents ambiguity and ensures consistent date interpretation, regardless of the server or user's local timezone.
+
+## The Problem
+
+Without a clear convention, a date string like `2024-11-04` could be interpreted differently depending on the context:
+- As UTC midnight (`2024-11-04T00:00:00Z`)
+- As local midnight (`2024-11-04T00:00:00` in the executing environment's timezone)
+
+This ambiguity leads to off-by-one errors when converting between timezones or performing date calculations, especially around Daylight Saving Time transitions.
+
+## Guideline
+
+1.  **Assume Eastern Time (ET):** When parsing a `YYYY-MM-DD` string, treat it as midnight (`00:00:00`) on that date *in the `America/New_York` timezone*.
+2.  **Use Timezone-Aware Libraries:** Employ libraries like `date-fns-tz` (along with its peer dependency `date-fns`) to explicitly handle timezone conversions. You can assume these libraries are already installed in the project. Other options include `dayjs` (with timezone plugins) or potentially `Temporal` (when available).
+3.  **Convert to UTC for Storage/Calculations (Recommended):** While the *interpretation* is ET, it's often best practice to convert the ET date/time instant to a UTC timestamp (e.g., an ISO 8601 string like `2024-11-04T05:00:00.000Z`) immediately after parsing. Store this UTC representation in state or databases and perform calculations using it to avoid complexities with DST or future timezone rule changes.
+4.  **Format Explicitly for Display:** When displaying the date or formatting it back to a `YYYY-MM-DD` string (e.g., for UI display, URL parameters, or passing to components expecting this format), explicitly convert the internal UTC representation back to the ET calendar date. The reliable pattern is to use `utcToZonedTime` followed by `format(zonedDate, 'yyyy-MM-dd')`.
+5.  **Canonical Timezone ID:** Always use the IANA timezone identifier `America/New_York` for US Eastern Time, rather than abbreviations like `EST` or `EDT`, which are ambiguous.
+
+## Interacting with UI Components (e.g., Date Pickers)
+
+UI components, especially date pickers (`antd` `DatePicker`, etc.), often interact with dates based on the user's *local* timezone for display purposes, even if initialized with a specific UTC instant. This can lead to visual discrepancies if not handled carefully.
+
+**Recommended Pattern:**
+
+1.  **Internal State:** Store the date as the reliable UTC ISO string representing ET midnight (Guideline 3).
+2.  **Display Value (`value` prop):**
+    *   Convert the internal UTC ISO string state back to the `YYYY-MM-DD` string representing the ET calendar date (Guideline 4, using `utcToZonedTime` + `format`).
+    *   Initialize the date picker's `value` prop by passing *this `YYYY-MM-DD` string* to the date library constructor (e.g., `dayjs('2024-11-04')`). This typically forces the picker to display the date based on local midnight for that calendar date, matching user expectations.
+3.  **Input Handling (`onChange`):**
+    *   The `onChange` handler often provides a date object representing the user's selection in their local time.
+    *   Format this local date object to a `YYYY-MM-DD` string.
+    *   Convert this `YYYY-MM-DD` string back to the ET midnight UTC ISO string using `zonedTimeToUtc`.
+    *   Update the internal state with this UTC ISO string.
+
+**Example (Conceptual - React with `date-fns-tz` and `dayjs` for `DatePicker`):**
+
+```typescript
+import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import dayjs from 'dayjs';
+import { DatePicker } from 'antd'; // Assuming Ant Design DatePicker
+
+const easternTimeZone = 'America/New_York';
+
+// Convert YYYY-MM-DD (ET) to UTC ISO String (ET Midnight)
+const toETMidnightUTC = (dateString: string | null): string | null => {
+  if (!dateString) return null;
+  try { return zonedTimeToUtc(dateString, easternTimeZone).toISOString(); }
+  catch { return null; }
+};
+
+// Convert UTC ISO String back to YYYY-MM-DD (ET)
+const toETDateString = (isoString: string | null): string | null => {
+  if (!isoString) return null;
+  try {
+    const utcDate = parseISO(isoString);
+    const zonedDate = utcToZonedTime(utcDate, easternTimeZone);
+    return format(zonedDate, 'yyyy-MM-dd');
+  } catch { return null; }
+};
+
+function MyComponent() {
+  // 1. Internal State: Store UTC ISO string representing ET midnight
+  const [selectedDateISO, setSelectedDateISO] = useState<string | null>(
+    toETMidnightUTC('2024-11-05') // Example initial date
+  );
+
+  // Handler for DatePicker change
+  const handleDateChange = (date: dayjs.Dayjs | null) => {
+    if (date) {
+      // 3a. Format local Dayjs object to YYYY-MM-DD
+      const dateString = date.format('YYYY-MM-DD');
+      // 3b. Convert YYYY-MM-DD back to ET midnight UTC for state
+      setSelectedDateISO(toETMidnightUTC(dateString));
+    } else {
+      setSelectedDateISO(null);
+    }
+  };
+
+  // 2a. Convert state ISO string to YYYY-MM-DD for display logic
+  const displayDateString = toETDateString(selectedDateISO);
+
+  return (
+    <DatePicker
+      // 2b. Initialize DatePicker value using Dayjs with the YYYY-MM-DD string
+      value={displayDateString ? dayjs(displayDateString) : null}
+      onChange={handleDateChange}
+    />
+  );
+}
+```
+
+## Examples (Core `date-fns-tz` Conversions)
+
+Let's assume we have the date string `2024-03-10` (the day DST starts in the US in 2024).
+
+❌ **Bad (Ambiguous Parsing):**
+
+```typescript
+// This relies on the system's local timezone, which is unreliable.
+const dateString = '2024-03-10';
+const ambiguousDate = new Date(dateString); // Might be UTC, might be local midnight.
+
+// Calculations are unpredictable.
+ambiguousDate.setDate(ambiguousDate.getDate() + 1);
+console.log(ambiguousDate.toISOString()); // Output varies based on where the code runs.
+```
+
+✅ **Good (Using `date-fns-tz`):**
+
+```typescript
+import { format, parseISO } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz'; // Added utcToZonedTime
+import { addDays } from 'date-fns'; // Use functions from date-fns
+
+const dateString = '2024-03-10';
+const easternTimeZone = 'America/New_York';
+
+// 1. Parse the string assuming it's midnight in ET -> UTC Instant
+const dateInUTC: Date = zonedTimeToUtc(dateString, easternTimeZone);
+// dateInUTC is now a standard JavaScript Date object representing the correct instant in time (UTC).
+// For '2024-03-10', this is 2024-03-10T05:00:00Z (before DST shift)
+const dateISOString: string = dateInUTC.toISOString(); // Store this ISO string
+
+// --- Somewhere else, using the stored ISO string ---
+const storedISOString = '2024-03-10T05:00:00.000Z'; // Assume this was retrieved
+
+// 2. Perform calculations (best done on the reliable Date/UTC object)
+const retrievedUTCDate = parseISO(storedISOString);
+const nextDayUTC = addDays(retrievedUTCDate, 1); // Add 1 day reliably -> 2024-03-11T05:00:00.000Z
+
+// 3. Format back to YYYY-MM-DD (ET) for display (using recommended pattern)
+const nextDayZoned = utcToZonedTime(nextDayUTC, easternTimeZone);
+const formattedETDate = format(nextDayZoned, 'yyyy-MM-dd');
+console.log(formattedETDate); // Output: '2024-03-11'
+
+// Example showing the UTC instant:
+console.log(dateInUTC.toISOString()); // -> 2024-03-10T05:00:00.000Z
+console.log(nextDayUTC.toISOString()); // -> 2024-03-11T05:00:00.000Z
+```
+
+## Rationale
+
+By defining a standard interpretation timezone (`America/New_York`) for all date-only strings, we eliminate ambiguity. Converting to UTC for internal representation provides a robust way to handle calculations and storage, free from DST complexities. Handling UI interactions carefully ensures visual consistency for the user while maintaining accurate internal state. This ensures that `YYYY-MM-DD` values consistently represent the intended day in the business's primary timezone (ET).

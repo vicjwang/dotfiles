@@ -1,0 +1,138 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+---
+description: Standardizes using mockGraphQLQuery for RedwoodJS Cell components in Storybook.
+globs: web/src/components/**/*Cell/*.stories.tsx
+alwaysApply: false
+---
+# RedwoodJS Storybook Cell Mock Data with mockGraphQLQuery
+
+This rule outlines the standard pattern for providing mock data to RedwoodJS Cell components within Storybook stories using a `mockGraphQLQuery` function. This approach ensures consistency and makes it easy to manage mock data for your cells.
+
+## The Pattern
+
+The pattern involves two main files for each Cell component (e.g., `MyCell`):
+
+1.  `MyCell.mock.ts`: This file exports a `mockGraphQLQuery` function that returns the mock data.
+2.  `MyCell.stories.tsx`: This file imports `mockGraphQLQuery` and uses it to pass data to the `Success` (or other relevant) component in its stories.
+
+### 1. The `*.mock.ts` File
+
+The `*.mock.ts` file (e.g., `GreeksAttributionCalculatorCell.mock.ts`) should export a function named `mockGraphQLQuery`.
+
+**Guidelines:**
+
+-   The `mockGraphQLQuery` function should return an object.
+-   The key(s) in this object should match the name(s) of the data expected by your Cell's `Success` component (typically, this corresponds to the name of your GraphQL query).
+-   The value(s) should be the actual mock data.
+-   The function can optionally accept a `_vars` argument if your Cell's query uses variables, allowing for dynamic mock data generation if needed, though static data is often sufficient for Storybook.
+
+✅ **Example (`GreeksAttributionCalculatorCell.mock.ts`):**
+
+```typescript
+// web/src/components/GreeksAttributionCalculatorCell/GreeksAttributionCalculatorCell.mock.ts
+
+// Define the mock data directly within the mockGraphQLQuery function
+export const mockGraphQLQuery = (
+  _vars?: { // Accept variables, even if not used in this static mock
+    ticker: string
+    tradeDate: string
+    expiryDate: number // Assuming strike was meant to be expiryDate based on common patterns
+    strike: number
+    optionType: string
+  }
+) => ({
+  // The key 'greeksAttributionData' matches what the Success component expects
+  greeksAttributionData: [
+    {
+      date: '2025-04-02T00:00:00.000Z',
+      deltaPnl: 0.3707529999999904,
+      gammaPnl: 0.013782129999999285,
+      // ... other fields ...
+      __typename: 'GreeksAttributionPoint',
+    },
+    // ... more mock data items ...
+  ],
+})
+```
+
+### 2. The `*.stories.tsx` File
+
+The `*.stories.tsx` file (e.g., `GreeksAttributionCalculatorCell.stories.tsx`) uses the `mockGraphQLQuery` function to supply data to the Cell's `Success` component.
+
+**Guidelines:**
+
+-   Import `mockGraphQLQuery` from the corresponding `*.mock.ts` file.
+-   In your `success` story (or any story that renders the `Success` component), spread the result of calling `mockGraphQLQuery()` as props to the `Success` component.
+-   You can also spread `args` if you need to pass additional Storybook controls to the component.
+
+✅ **Example (`GreeksAttributionCalculatorCell.stories.tsx`):**
+
+```typescript
+// web/src/components/GreeksAttributionCalculatorCell/GreeksAttributionCalculatorCell.stories.tsx
+
+import type { Meta, StoryObj } from "@storybook/react";
+
+import {
+  Loading,
+  Empty,
+  Failure,
+  Success,
+} from "./GreeksAttributionCalculatorCell";
+// Import from the .mock.ts file
+import { mockGraphQLQuery } from "./GreeksAttributionCalculatorCell.mock";
+
+const meta: Meta<typeof Success> = { // Typed for better control over args if needed
+  title: "Cells/GreeksAttributionCalculatorCell",
+  component: Success, // Optional: specify component for better Storybook integration
+  tags: ["autodocs"],
+};
+
+export default meta;
+
+// ... other stories (loading, empty, failure) ...
+
+export const success: StoryObj<typeof Success> = {
+  render: (args) => {
+    // Spread the result of mockGraphQLQuery() and any story args
+    return Success ? <Success {...mockGraphQLQuery()} {...args} /> : <></>;
+  },
+};
+
+// If your mockGraphQLQuery needed variables and you wanted to control them via Storybook args:
+/*
+export const successWithVars: StoryObj<typeof Success> = {
+  args: { // Define args that match the _vars structure in mock.ts
+    ticker: 'AAPL',
+    tradeDate: '2023-01-01',
+    expiryDate: '2023-12-31',
+    strike: 150,
+    optionType: 'Call'
+  },
+  render: (args) => {
+    // Pass the relevant args to mockGraphQLQuery
+    const mockData = mockGraphQLQuery({
+      ticker: args.ticker,
+      tradeDate: args.tradeDate,
+      expiryDate: args.expiryDate, // Ensure these match the vars expected by your mock
+      strike: args.strike,
+      optionType: args.optionType
+    });
+    return Success ? <Success {...mockData} {...args} /> : <></>;
+  },
+};
+*/
+```
+
+## Rationale
+
+-   **Consistency:** Provides a uniform way to handle mock data for all RedwoodJS Cells in Storybook.
+-   **Separation of Concerns:** Keeps mock data definition separate from the story presentation logic.
+-   **Clarity:** Makes it clear where the mock data for a Cell's stories comes from.
+-   **Reusability:** The `*.mock.ts` file can potentially be reused for unit tests if needed (though Redwood's built-in mocking is typically used there).
+-   **Alignment with Redwood Conventions:** Leverages the `*.mock.ts` file, which is a standard part of a Redwood Cell's structure.
+
+By following this pattern, you make your Cell stories more robust, easier to understand, and maintain.

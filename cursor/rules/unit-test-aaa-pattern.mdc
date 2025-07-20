@@ -1,9 +1,4 @@
 ---
-description: 
-globs: *test*
-alwaysApply: false
----
- ---
 description: Encourages using the Arrange, Act, Assert (AAA) pattern in unit tests for clarity and consistency.
 globs: ['**/*.{test,spec}.{ts,tsx,js,jsx}', '**/tests/**/*.{ts,tsx,js,jsx}', '**/__tests__/**/*.{ts,tsx,js,jsx}']
 alwaysApply: false
@@ -98,4 +93,4 @@ describe('add function', () => {
 -   **Readability:** Clearly separated sections make it easy to understand what the test is setting up, what it's doing, and what it's verifying.
 -   **Maintainability:** When a test fails, the structure helps pinpoint whether the issue lies in the setup (Arrange), the code under test (Act), or the verification logic (Assert).
 -   **Consistency:** Applying a standard pattern across all tests makes the test suite easier to navigate and understand.
--   **Focus:** Encourages testing one specific behavior or scenario per test case. 
+-   **Focus:** Encourages testing one specific behavior or scenario per test case.

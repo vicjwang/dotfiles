@@ -258,6 +258,7 @@ function validateEmail(email: string): boolean {
 }
 ```
 
+// ... existing code ...
 ## Final Checklist
 
 Before completing your review:
@@ -270,6 +271,10 @@ Before completing your review:
    - Unit tests for individual functions
    - Integration tests for component interactions
    - End-to-end tests for critical flows
-6. **Confirm you've provided concrete code suggestions for all issues identified**
+6. **Check for and remove any remaining `console.log` statements used for debugging.**
+7. **Ensure all unused imports are removed.**
+8. **Verify that there are no unused variables.**
+9. **Address linter warnings/errors purely stylistically, without altering the underlying logic.**
+10. **Confirm you've provided concrete code suggestions for all issues identified**
 
 Remember that the goal of code review is to improve code quality while fostering a collaborative, positive team culture. Provide constructive feedback with specific code improvements and be open to discussion.

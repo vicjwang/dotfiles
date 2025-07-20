@@ -1,0 +1,94 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Declarative URL Parameter Management for Pages
+
+This rule mandates a declarative approach for managing URL parameters that reflect component state. Imperatively updating the URL from within event handlers is fragile and can lead to race conditions where parameters are lost during initial page load or rapid state changes.
+
+## Guideline
+
+1.  **Initialize State from URL:** On component mount, initialize each piece of state that is reflected in the URL directly from the `URLSearchParams`. Provide a sensible default if the parameter is not present.
+2.  **Use Individual `useState` Hooks:** Manage each form input with its own `useState` hook for clarity and granular control.
+3.  **Create a Declarative `useEffect`:** Implement a `useEffect` hook that listens for changes to all state variables that are reflected in the URL.
+4.  **Rebuild URL from State:** Inside the `useEffect`, construct a new `URLSearchParams` object from the *current* state. This ensures the URL is always a direct reflection of the component's state, creating a single source of truth.
+5.  **Navigate with `replace`:** Use the router's `navigate` function with the `{ replace: true }` option to update the URL without adding a new entry to the browser's history.
+
+## Examples
+
+The following examples demonstrate the fragile imperative pattern vs. the robust declarative pattern. For a complete implementation, see [`AttributionVisualizerPage.tsx`](mdc:web/src/pages/AttributionVisualizerPage/AttributionVisualizerPage.tsx) (good) and the refactored [`HedgeAnalysisPage.tsx`](mdc:web/src/pages/HedgeAnalysisPage/HedgeAnalysisPage.tsx) (good).
+
+### ❌ Bad (Imperative & Fragile)
+
+This approach updates the URL from within an event handler (`handleChange`). It relies on a fragile `isInitializing` flag and timeout to prevent wiping out URL parameters on the initial load, which is a common source of bugs.
+
+```typescript
+// In a page component...
+const HedgeAnalysisPage = () => {
+  const location = useLocation();
+  const [formData, setFormData] = useState(getInitialValues); // State is one large object
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    // Logic to set initial form values...
+    setTimeout(() => {
+      setIsInitializing(false); // Fragile flag
+    }, 300);
+  }, []);
+
+  const handleChange = (value, fieldName) => {
+    const newFormData = { ...formData, [fieldName]: value };
+    setFormData(newFormData);
+
+    // Imperative URL update inside an event handler
+    if (!isInitializing) {
+      // This is prone to race conditions. It modifies the *current*
+      // search params, rather than rebuilding from a complete state.
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.set(fieldName, value.toString());
+      navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+    }
+  };
+
+  // ...
+};
+```
+
+### ✅ Good (Declarative & Robust)
+
+This approach establishes a clear, one-way data flow from state to the URL, making it predictable and reliable.
+
+```typescript
+// In a page component...
+const HedgeAnalysisPage = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+
+  // 1. Initialize each piece of state directly from the URL
+  const [tickerA, setTickerA] = useState(() => searchParams.get('tickerA') || '');
+  const [sharesA, setSharesA] = useState(() => parseInt(searchParams.get('sharesA')) || 100);
+  // ... other useState hooks for each parameter
+
+  // 3. Declarative effect to sync state -> URL
+  useEffect(() => {
+    // 4. Rebuild URL from the single source of truth: the current state
+    const params = { tickerA, sharesA: sharesA.toString() /*, ... */ };
+    const newSearch = new URLSearchParams(
+      Object.entries(params).filter(([, val]) => val) // Filter out empty values
+    ).toString();
+
+    // 5. Navigate to the newly constructed URL
+    const url = `${location.pathname}?${newSearch}`;
+    navigate(url, { replace: true });
+  }, [tickerA, sharesA, location.pathname]); // Effect runs only when state changes
+
+  // ...
+};
+```
+
+## Rationale
+
+- **Reliability**: A declarative `useEffect` hook creates a single, predictable path for URL updates, eliminating race conditions.
+- **Single Source of Truth**: The component's state is the single source of truth. The URL is always a reflection of that state.
+- **Readability & Maintainability**: The logic for URL synchronization is co-located in one effect, making it easier to understand and debug compared to being scattered across multiple event handlers.

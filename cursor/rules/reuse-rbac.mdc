@@ -1,0 +1,138 @@
+---
+description:
+globs: web/**/*.ts,web/**/*.tsx,web/**/*.js
+alwaysApply: false
+---
+---
+description: Use centralized RBAC functions from rbac.ts for consistent role checking and date initialization
+globs: web/**/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+# RBAC Functions Usage
+
+This rule encourages using the centralized RBAC (Role-Based Access Control) functions from `src/lib/rbac.ts` for consistent role checking and subscription-based date initialization throughout the web application.
+
+## Available Functions
+
+1. **`isStarter(roles?: string[])`** - Checks if user has starter subscription (starter_yearly, starter_quarter)
+2. **`isPro(roles?: string[])`** - Checks if user has pro subscription (pro_yearly, pro_quarter)
+3. **`isSubscriber(roles?: string[])`** - Checks if user has any subscription (combines isPro and isStarter)
+4. **`isAdmin(roles?: string[])`** - Checks if user has admin role
+5. **`getInitialDate(isSubscriber: boolean)`** - Gets appropriate initial date based on subscription status (today for subscribers, 30 days ago for non-subscribers, skipping non-working days)
+
+## Guidelines
+
+- **Always import and use these functions** instead of manually checking roles or implementing date logic
+- **Use `isStarter()` for starter subscription checks** rather than manually checking starter role arrays
+- **Use `isPro()` for pro subscription checks** rather than manually checking pro role arrays
+- **Use `isSubscriber()` for any subscription checks** rather than manually checking role arrays
+- **Use `isAdmin()` for admin checks** rather than manually checking for 'admin' role
+- **Use `getInitialDate()` for subscription-based date initialization** rather than custom date logic
+
+## Examples
+
+✅ **Good:**
+
+```typescript
+import { isSubscriber, isAdmin, isPro, isStarter, getInitialDate } from 'src/lib/rbac'
+
+// Role checking with granular functions
+function canAccessFeature(userRoles: string[]) {
+  if (isAdmin(userRoles)) {
+    return true
+  }
+  return isPro(userRoles) // Only pro users can access this feature
+}
+
+// General subscription check
+function canAccessPremiumContent(userRoles: string[]) {
+  return isSubscriber(userRoles) // Any subscriber (starter or pro)
+}
+
+// Date initialization based on subscription
+function initializeData(userRoles: string[]) {
+  const initialDate = getInitialDate(isSubscriber(userRoles))
+  return fetchDataFromDate(initialDate)
+}
+
+// Component usage with different access levels
+function Dashboard({ user }) {
+  const hasAnySubscription = isSubscriber(user.roles)
+  const hasProSubscription = isPro(user.roles)
+  const isUserAdmin = isAdmin(user.roles)
+
+  return (
+    <div>
+      {hasAnySubscription && <BasicPremiumFeature />}
+      {hasProSubscription && <ProOnlyFeature />}
+      {isUserAdmin && <AdminPanel />}
+    </div>
+  )
+}
+```
+
+❌ **Bad:**
+
+```typescript
+// Manual role checking - inconsistent and error-prone
+function canAccessFeature(userRoles: string[]) {
+  if (userRoles?.includes('admin')) {
+    return true
+  }
+  return userRoles?.includes('pro_yearly') || userRoles?.includes('pro_quarter')
+}
+
+// Manual subscription logic - duplicates business logic
+function canAccessPremiumContent(userRoles: string[]) {
+  return userRoles?.includes('pro_yearly') ||
+         userRoles?.includes('pro_quarter') ||
+         userRoles?.includes('starter_yearly') ||
+         userRoles?.includes('starter_quarter')
+}
+
+// Manual date logic - duplicates business logic
+function initializeData(userRoles: string[]) {
+  const isUserSubscriber = userRoles?.includes('pro_yearly') || userRoles?.includes('starter_yearly')
+  const initialDate = isUserSubscriber
+    ? format(new Date(), 'yyyy-MM-dd')
+    : format(subDays(new Date(), 30), 'yyyy-MM-dd')
+  return fetchDataFromDate(initialDate)
+}
+
+// Inline role checks
+function Dashboard({ user }) {
+  const canViewPremiumContent = user.roles?.includes('pro_yearly') || user.roles?.includes('admin')
+
+  return (
+    <div>
+      {canViewPremiumContent && <PremiumFeature />}
+    </div>
+  )
+}
+```
+
+## Function Hierarchy
+
+- **`isAdmin()`** - Admin-only access
+- **`isPro()`** - Pro subscription only
+- **`isStarter()`** - Starter subscription only
+- **`isSubscriber()`** - Any subscription (combines isPro + isStarter)
+
+Use the most specific function for your use case. For example, if a feature is only for pro users, use `isPro()` rather than `isSubscriber()`.
+
+## Benefits
+
+- **Consistency:** All role checks use the same logic across the application
+- **Maintainability:** Role definitions are centralized - changes only need to be made in one place
+- **Granular Control:** Different functions for different subscription tiers
+- **Reliability:** Reduces risk of missing role types or implementing incorrect date logic
+- **DRY Principle:** Eliminates duplication of role checking and date initialization logic
+
+## Import Statement
+
+Always import the functions you need:
+
+```typescript
+import { isSubscriber, isAdmin, isPro, isStarter, getInitialDate } from 'src/lib/rbac'
+```
+```

@@ -1,0 +1,164 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# RedwoodJS Project Directory Structure
+
+This rule outlines the standard RedwoodJS project structure and naming conventions used throughout this codebase.
+
+## Root Level Structure
+
+```
+project-root/
+├── web/                    # Frontend React application
+├── api/                    # Backend GraphQL API and serverless functions
+├── scripts/                # Database seeds, deploy scripts, etc.
+├── prisma/                 # Database schema and migrations
+├── .redwood/              # Generated RedwoodJS files (do not edit)
+├── redwood.toml           # RedwoodJS configuration
+├── graphql.config.js      # GraphQL tooling configuration
+└── package.json           # Root package.json for workspace
+```
+
+## Web Side Structure (`web/`)
+
+```
+web/
+├── src/
+│   ├── components/         # Reusable React components
+│   │   ├── ComponentName/  # Individual component folders
+│   │   │   ├── ComponentName.tsx
+│   │   │   ├── ComponentName.test.tsx
+│   │   │   └── ComponentName.stories.tsx
+│   │   └── CellName/       # RedwoodJS Cells (data-fetching components)
+│   │       ├── CellName.tsx
+│   │       ├── CellName.test.tsx
+│   │       └── CellName.stories.tsx
+│   ├── pages/              # Page components (automatically routed)
+│   │   ├── PageName/
+│   │   │   └── PageNamePage.tsx
+│   │   └── NotFoundPage/
+│   ├── layouts/            # Layout components for wrapping pages
+│   │   └── LayoutName/
+│   │       └── LayoutName.tsx
+│   ├── lib/                # Shared utilities and configurations
+│   │   ├── auth.ts         # Authentication configuration
+│   │   ├── constants.ts    # Application constants
+│   │   └── rbac.ts         # Role-based access control functions
+│   ├── Routes.tsx          # Application routing configuration
+│   ├── App.tsx             # Root application component
+│   └── index.tsx           # Application entry point
+├── public/                 # Static assets
+├── types/                  # TypeScript type definitions
+└── package.json            # Web-specific dependencies
+```
+
+## API Side Structure (`api/`)
+
+```
+api/
+├── src/
+│   ├── graphql/            # GraphQL schema and resolvers
+│   │   ├── schema.sdl.ts   # GraphQL schema definitions
+│   │   └── resolvers.ts    # GraphQL resolvers
+│   ├── services/           # Business logic and data access
+│   │   └── serviceName.ts  # Service functions
+│   ├── functions/          # Serverless functions
+│   │   └── functionName.ts # Individual functions
+│   ├── directives/         # Custom GraphQL directives
+│   ├── lib/                # Shared API utilities
+│   │   ├── auth.ts         # API authentication logic
+│   │   ├── db.ts           # Database client configuration
+│   │   └── logger.ts       # Logging configuration
+│   └── types/              # API-specific TypeScript types
+└── package.json            # API-specific dependencies
+```
+
+## Component Organization Conventions
+
+### Standard Components
+- **Location:** `web/src/components/ComponentName/`
+- **Main File:** `ComponentName.tsx`
+- **Naming:** PascalCase for component names and folders
+- **Exports:** Default export for the main component
+
+### RedwoodJS Cells
+- **Location:** `web/src/components/CellName/`
+- **Naming:** Must end with `Cell` (e.g., `UserProfileCell`)
+- **Import Convention:** Import from directory, not file (see [redwood-cell-import-convention](mdc:.cursor/rules/redwood-cell-import-convention.mdc))
+- **Structure:** Contains Loading, Empty, Failure, and Success components
+
+### Pages
+- **Location:** `web/src/pages/PageName/`
+- **Naming:** Must end with `Page` (e.g., `HomePage`, `AboutPage`)
+- **Routing:** Automatically routed based on folder structure
+
+### Layouts
+- **Location:** `web/src/layouts/LayoutName/`
+- **Purpose:** Wrap pages with common UI elements
+- **Naming:** Descriptive names like `MainLayout`, `AuthLayout`
+
+## Technology Stack Integration
+
+### Frontend (`web/`)
+- **React**: Component-based UI framework
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Ant Design**: UI component library
+- **Jotai**: State management
+- **Highcharts**: Data visualization
+- **Shadcn/UI**: Additional UI components
+
+### Backend (`api/`)
+- **GraphQL**: API query language and runtime
+- **Prisma**: Database ORM and migration tool
+- **PostgreSQL**: Relational database
+
+## File Naming Conventions
+
+- **Components**: PascalCase (`AttributionBChart.tsx`)
+- **Pages**: PascalCase ending with `Page` (`DashboardPage.tsx`)
+- **Cells**: PascalCase ending with `Cell` (`UserDataCell.tsx`)
+- **Layouts**: PascalCase ending with `Layout` (`MainLayout.tsx`)
+- **Services**: camelCase (`userData.ts`)
+- **Utilities**: camelCase (`formatHelper.ts`)
+- **Types**: PascalCase for interfaces/types
+
+## Import Path Conventions
+
+- **Absolute imports from `src/`**: `import { auth } from 'src/lib/auth'`
+- **Cell imports**: `import UserProfileCell from 'src/components/UserProfileCell'`
+- **Type imports**: `import type { User } from 'types/graphql'`
+- **Relative imports**: Only for files in the same directory
+
+## Database and GraphQL
+
+- **Schema**: Defined in `prisma/schema.prisma`
+- **Migrations**: Generated in `prisma/migrations/`
+- **GraphQL Types**: Auto-generated in `types/graphql.d.ts`
+- **SDL Files**: Define GraphQL schema in `api/src/graphql/`
+
+## Testing Conventions
+
+- **Test Files**: Co-located with components (`ComponentName.test.tsx`)
+- **Storybook**: Stories files (`ComponentName.stories.tsx`)
+- **Test Data**: Mock data in `__mocks__/` directories
+
+## Configuration Files
+
+- **RedwoodJS**: `redwood.toml` for framework configuration
+- **Database**: `prisma/schema.prisma` for database schema
+- **TypeScript**: `tsconfig.json` for TypeScript configuration
+- **Linting**: `.eslintrc.js` for code linting rules
+
+## Best Practices
+
+1. **Component Organization**: Keep related files together in component folders
+2. **Import Consistency**: Use absolute imports from `src/` root
+3. **Type Safety**: Leverage generated GraphQL types
+4. **Role-Based Access**: Use centralized RBAC functions (see [reuse-rbac](mdc:.cursor/rules/reuse-rbac.mdc))
+5. **Styling**: Follow Tailwind CSS utility-first approach
+6. **State Management**: Use Jotai for complex state, React state for simple cases
+
+This structure ensures maintainability, scalability, and follows RedwoodJS best practices for full-stack development.

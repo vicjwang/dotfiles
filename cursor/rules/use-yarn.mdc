@@ -1,0 +1,123 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Use Yarn Over NPM
+
+This rule establishes yarn as the preferred package manager for all command line operations in this project. When suggesting or running package management commands, always use yarn instead of npm.
+
+## Package Installation
+
+✅ **Good (Use yarn):**
+```bash
+# Install dependencies
+yarn install
+
+# Add new dependencies
+yarn add package-name
+yarn add -D package-name
+
+# Add specific versions
+yarn add package-name@^1.2.3
+
+# Global installations
+yarn global add package-name
+```
+
+❌ **Bad (Avoid npm):**
+```bash
+# Don't use npm commands
+npm install
+npm install package-name
+npm install --save-dev package-name
+npm install -g package-name
+```
+
+## Script Execution
+
+✅ **Good (Use yarn):**
+```bash
+# Run scripts defined in package.json
+yarn start
+yarn build
+yarn test
+yarn dev
+yarn lint
+
+# Run scripts with arguments
+yarn test --watch
+yarn build --production
+```
+
+❌ **Bad (Avoid npm):**
+```bash
+# Don't use npm run
+npm start
+npm run build
+npm run test
+npm run dev
+```
+
+## Package Management Operations
+
+✅ **Good (Use yarn):**
+```bash
+# Remove packages
+yarn remove package-name
+
+# Update packages
+yarn upgrade
+yarn upgrade package-name
+
+# Check outdated packages
+yarn outdated
+
+# Clean cache
+yarn cache clean
+```
+
+❌ **Bad (Avoid npm):**
+```bash
+# Don't use npm equivalents
+npm uninstall package-name
+npm update
+npm outdated
+npm cache clean
+```
+
+## Workspace Operations
+
+✅ **Good (Use yarn workspaces):**
+```bash
+# Install dependencies for all workspaces
+yarn install
+
+# Run command in specific workspace
+yarn workspace package-name command
+
+# Add dependency to specific workspace
+yarn workspace package-name add dependency-name
+```
+
+## Documentation and Examples
+
+- When writing documentation that includes command examples, always use yarn
+- When providing installation instructions, default to yarn commands
+- In README files, prefer yarn over npm in getting started sections
+- When creating scripts or automation, use yarn commands
+
+## Rationale
+
+- **Consistency**: Using a single package manager across the project reduces confusion
+- **Performance**: Yarn typically offers faster installation and better caching
+- **Lock Files**: Yarn's lock file format provides more reliable dependency resolution
+- **Workspace Support**: Better monorepo/workspace support in yarn
+- **Project Standard**: Maintains consistency with existing project setup
+
+## Exceptions
+
+The only acceptable time to mention npm is:
+- When documenting migration from npm to yarn
+- When explaining differences between package managers
+- When dealing with npm-specific issues or troubleshooting

@@ -1,9 +1,4 @@
----
-description: 
-globs: api/src/functions/*.ts
-alwaysApply: false
----
- # Redwood GraphQL Error Types
+# Redwood GraphQL Error Types
 
 When throwing errors in Redwood GraphQL services, use the specialized error types from `@redwoodjs/graphql-server` rather than generic JavaScript `Error` objects. This ensures errors are properly formatted and passed through to the frontend even in production environments.
 
@@ -85,4 +80,4 @@ export const Failure = ({ error }) => {
   // This will show the detailed message in both development and production
   return <div className="error-message">{error.message}</div>
 }
-``` 
+```

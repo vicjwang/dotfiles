@@ -1,0 +1,145 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Ant Design Admin Table Summary Row Pattern
+
+This rule documents a standard pattern for adding a summary row (typically for totals) to an Ant Design `Table` component. This is particularly useful in admin interfaces or data-heavy tables where column totals provide quick insights.
+
+The pattern uses the `summary` prop of the `<Table>` component to render a fixed row at the top or bottom.
+
+## Admin Access Control
+
+**Admin tables must be restricted to admin users only using the centralized RBAC functions from `src/lib/rbac.ts`.**
+
+### Required RBAC Implementation
+
+1. **Import the admin check function:**
+   ```typescript
+   import { isAdmin } from 'src/lib/rbac'
+   ```
+
+2. **Check admin access:** Use the `isAdmin()` function to verify user permissions before rendering the table
+3. **Conditional rendering:** Only render the admin table when the user has admin privileges
+
+### RBAC Example
+
+```tsx
+import { isAdmin } from 'src/lib/rbac'
+
+function MyComponent({ user }) {
+  const userIsAdmin = isAdmin(user?.roles)
+
+  return (
+    <div>
+      {/* Regular content for all users */}
+
+      {/* Admin-only table */}
+      {userIsAdmin && (
+        <div className="bg-white border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-4">Admin Data Table</h3>
+          <Table
+            // ... table configuration
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+## Table Summary Guideline
+
+When you need to add a row of totals to an admin data table, follow these steps:
+
+1.  **Use the `summary` prop:** Attach the `summary` prop to your `<Table>` component. It accepts a function that receives the current page's data (`pageData`) and should return a `Table.Summary` component.
+2.  **Define a Totals Interface:** Create a TypeScript `interface` (e.g., `TotalsType`) that defines the shape of your totals object. This should only include the keys for the columns you intend to sum.
+3.  **Calculate Totals:** Inside the `summary` function, initialize a `totals` object based on your interface. Iterate over the full dataset for the table (not just `pageData` if you want totals for all data) and calculate the sums for each relevant field.
+4.  **Render the Summary Row:** Return a `<Table.Summary>` component. For a top-aligned summary, use `<Table.Summary fixed="top">`.
+5.  **Structure with Cells:** Within a `<Table.Summary.Row>`, use `<Table.Summary.Cell>` for each column. The `index` prop of the cell corresponds to the column's position.
+6.  **Label and Format:**
+    *   Use `colSpan` on the first cell to create a "Totals:" label that spans across several non-numeric columns.
+    *   For columns that have a total, display the calculated value, preferably formatted using a helper function (like `formatNumber`).
+    *   For columns without a total, display a placeholder like `-`.
+
+## Example
+
+This example is taken directly from the `AttributionChart` component's admin table (`web/src/components/AttributionChart/AttributionChart.tsx`). It calculates and displays totals for various PnL columns.
+
+```tsx
+// Inside your component, within the <Table> component definition
+summary={(pageData) => {
+  // Define a type for the totals object - only include PnL columns
+  interface TotalsType {
+    sharesPnl: number
+    gammaPnl: number
+    vegaPnl: number
+    thetaPnl: number
+    premiumChange: number
+    interestRatePnl: number
+  }
+
+  // Initialize totals object - only for PnL columns
+  const totals: TotalsType = {
+    sharesPnl: 0,
+    gammaPnl: 0,
+    vegaPnl: 0,
+    thetaPnl: 0,
+    premiumChange: 0,
+    interestRatePnl: 0
+  }
+
+  // Calculate totals by iterating through the full data source
+  sortedData.forEach(item => {
+    totals.sharesPnl += item.sharesPnl || 0
+    totals.gammaPnl += item.gammaPnl || 0
+    totals.vegaPnl += item.vegaPnl || 0
+    totals.thetaPnl += item.thetaPnl || 0
+    totals.premiumChange += item.premiumChange || 0
+    totals.interestRatePnl += item.interestRatePnl || 0
+  })
+
+  return (
+    <Table.Summary fixed="top">
+      <Table.Summary.Row>
+        <Table.Summary.Cell index={0} colSpan={7} align="right">
+          <strong>Totals:</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={7} align="right">
+          <strong>{formatNumber(totals.sharesPnl, 2)}</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={8} align="right">
+          <strong>{formatNumber(totals.interestRatePnl, 2)}</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={9} align="right">-</Table.Summary.Cell>
+        <Table.Summary.Cell index={10} align="right">
+          <strong>{formatNumber(totals.gammaPnl, 2)}</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={11} align="right">-</Table.Summary.Cell>
+        <Table.Summary.Cell index={12} align="right">
+          <strong>{formatNumber(totals.thetaPnl, 2)}</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={13} align="right">-</Table.Summary.Cell>
+        <Table.Summary.Cell index={14} align="right">
+            <strong>{formatNumber(totals.vegaPnl, 2)}</strong>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell index={15} align="right">-</Table.Summary.Cell>
+        <Table.Summary.Cell index={16} align="right">
+          <strong>{formatNumber(totals.premiumChange, 2)}</strong>
+        </Table.Summary.Cell>
+        {/* ... more cells as needed to match column count ... */}
+      </Table.Summary.Row>
+    </Table.Summary>
+  );
+}}
+```
+
+## Rationale
+
+- **Security:** Admin tables contain sensitive data and must be properly protected using centralized RBAC functions to ensure only authorized users can access them.
+- **Consistency:** Provides a standard, reusable pattern for both access control and displaying summary data in tables across the application.
+- **Clarity:** Co-locates the summary logic with the table definition, making it easier to understand and maintain.
+- **Readability:** A fixed summary row gives users immediate access to important aggregate data without needing to scroll or perform manual calculations.
+- **Type Safety:** Using a `TotalsType` interface ensures that the totals object is handled correctly and reduces the risk of runtime errors.
+- **Centralized Access Control:** Using `isAdmin()` from `src/lib/rbac.ts` ensures consistent role checking across the application and makes it easy to modify admin privileges in one place.

@@ -1,0 +1,199 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Mocking useAuth in Storybook Stories
+
+This rule explains how to properly mock the `useAuth` hook in Storybook stories to avoid "useAuth must be used within an AuthProvider" errors while testing components that depend on authentication.
+
+## Problem
+
+Components that use `useAuth` will fail in Storybook with the error "useAuth must be used within an AuthProvider" because Storybook doesn't automatically wrap stories with the authentication context.
+
+## Solution Overview
+
+Use Storybook's module mocking with subpath imports to conditionally load a mock version of the auth module in Storybook while using the real module in the application.
+
+## Implementation Steps
+
+### 1. Create the Mock File
+
+Create a mock file alongside your auth module:
+
+**`web/src/auth.mock.ts`**
+```typescript
+import { fn } from '@storybook/test'
+import * as actual from './auth'
+
+// Re-export everything from the original module
+export * from './auth'
+
+// Mock the useAuth hook
+export const useAuth = fn(actual.useAuth).mockName('useAuth')
+```
+
+### 2. Configure Subpath Imports
+
+Add subpath imports configuration to `web/package.json`:
+
+```json
+{
+  "imports": {
+    "#auth": {
+      "storybook": "./src/auth.mock.ts",
+      "default": "./src/auth.ts"
+    },
+    "#auth.mock": "./src/auth.mock.ts"
+  }
+}
+```
+
+**Key points:**
+- `#auth` maps to mock in Storybook, real module by default
+- `#auth.mock` provides direct access to mock for proper TypeScript typing in stories
+- The `storybook` condition is automatically detected by Storybook
+
+### 3. Update Component Imports
+
+Change your component to use the subpath import:
+
+```typescript
+// ❌ Old way
+import { useAuth } from 'src/auth'
+
+// ✅ New way (enables conditional mocking)
+import { useAuth } from '#auth' // uses subpath imports for Storybook mocking
+```
+
+### 4. Mock in Stories
+
+Import the mock and set up `beforeEach` functions in your stories:
+
+```typescript
+import type { Meta, StoryObj } from '@storybook/react'
+
+// Must import mock file for proper typing
+import { useAuth } from '#auth.mock'
+
+import YourComponent from './YourComponent'
+
+export const RegularUser: Story = {
+  args: {
+    // your args
+  },
+  async beforeEach() {
+    // Mock regular user (no admin role)
+    useAuth.mockReturnValue({
+      currentUser: { id: 'user1', email: 'test@example.com' },
+      hasRole: () => false,
+      isAuthenticated: true,
+      loading: false,
+    } as any)
+  },
+}
+
+export const AdminUser: Story = {
+  args: {
+    // your args
+  },
+  async beforeEach() {
+    // Mock admin user
+    useAuth.mockReturnValue({
+      currentUser: { id: 'admin1', email: 'admin@example.com' },
+      hasRole: (role: string) => role === 'admin',
+      isAuthenticated: true,
+      loading: false,
+    } as any)
+  },
+}
+
+export const UnauthenticatedUser: Story = {
+  args: {
+    // your args
+  },
+  async beforeEach() {
+    // Mock unauthenticated state
+    useAuth.mockReturnValue({
+      currentUser: null,
+      hasRole: () => false,
+      isAuthenticated: false,
+      loading: false,
+    } as any)
+  },
+}
+```
+
+## Common Mock Scenarios
+
+### Regular User (No Special Roles)
+```typescript
+useAuth.mockReturnValue({
+  currentUser: { id: 'user1', email: 'test@example.com' },
+  hasRole: () => false,
+  isAuthenticated: true,
+  loading: false,
+} as any)
+```
+
+### Admin User
+```typescript
+useAuth.mockReturnValue({
+  currentUser: { id: 'admin1', email: 'admin@example.com' },
+  hasRole: (role: string) => role === 'admin',
+  isAuthenticated: true,
+  loading: false,
+} as any)
+```
+
+### Subscription-Based Roles
+```typescript
+useAuth.mockReturnValue({
+  currentUser: { id: 'user1', email: 'test@example.com' },
+  hasRole: (role: string) => ['pro_yearly', 'pro_quarter'].includes(role),
+  isAuthenticated: true,
+  loading: false,
+} as any)
+```
+
+### Loading State
+```typescript
+useAuth.mockReturnValue({
+  currentUser: null,
+  hasRole: () => false,
+  isAuthenticated: false,
+  loading: true,
+} as any)
+```
+
+## TypeScript Configuration
+
+Ensure your TypeScript configuration supports subpath imports by setting `moduleResolution` to `'Bundler'`, `'NodeNext'`, or `'Node16'` in `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "Bundler"
+  }
+}
+```
+
+## Benefits
+
+1. **No AuthProvider Wrapper Needed**: Components work in Storybook without authentication context
+2. **Conditional Loading**: Real auth in app, mock in Storybook
+3. **Type Safety**: Full TypeScript support with proper mock typing
+4. **Flexible Testing**: Easy to test different user states and roles
+5. **Clean Stories**: No complex setup or decorator configuration needed
+
+## Troubleshooting
+
+- **Import errors**: Ensure subpath imports are properly configured in `package.json`
+- **Type errors**: Import from `#auth.mock` in stories for proper mock typing
+- **Mock not working**: Verify the `storybook` condition in subpath imports
+- **Original module changes**: Update the mock file if the auth interface changes
+
+## References
+
+- [Storybook Module Mocking Documentation](mdc:https:/storybook.js.org/docs/writing-stories/mocking-data-and-modules/mocking-modules)
+- [Node.js Subpath Imports](mdc:https:/nodejs.org/api/packages.html#subpath-imports)
