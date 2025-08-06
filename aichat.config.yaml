@@ -1,0 +1,21 @@
+# see https://github.com/sigoden/aichat/blob/main/config.example.yaml
+
+#model: gemini:gemini-2.5-pro
+#clients:
+#- type: gemini
+#  api_key: fill-me-in
+
+stream: false
+model: lms:gpt-oss-20b
+clients:
+  - type: openai-compatible
+    name: lms
+    api_base: http://localhost:3000/v1
+    api_key: xxx  # LM Studio ignores this, but it's required syntactically
+    models:
+      - name: gpt-oss-20b
+        max_input_tokens: 131072
+        # Below flags are to ensure functional "execute" mode
+        no_stream: true
+        no_system_message: true
+        system_prompt_prefix: Formatting re-enabled
