@@ -87,10 +87,11 @@ autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTr
 
 " SimpylFold
 set foldmethod=indent
+set foldlevel=99
 
 "## ALE ##
 " Enable ALE
-let g:ale_enabled = 1
+let g:ale_enabled = 0
 
 " Python linters (choose one or more)
 let g:ale_python_flake8_options = '--max-line-length=120' " Example flake8 options
@@ -157,3 +158,9 @@ let g:SuperTabBackwardKey = '<S-Tab>'
 nmap <leader>g :JediGoToDefinition<CR>
 nmap <leader>r :JediRename<CR>
 nmap <leader>d :JediDoc<CR>
+
+" Copy and paste - enable bracketed paste
+if &term =~ "xterm" || &term =~ "screen"
+  let &t_ti .= "\e[?2004h"
+  let &t_te .= "\e[?2004l"
+endif

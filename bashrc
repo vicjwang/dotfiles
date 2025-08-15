@@ -21,3 +21,9 @@ alias table='column -t -s","'
 # Ubuntu only
 #alias pbcopy=xclip
 #alias pbpaste="xclip -o"
+
+
+
+# To ensure copy/paste works with tmux
+bind 'set enable-bracketed-paste on'
+
