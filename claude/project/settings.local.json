@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(git log:*)",
+      "Bash(grep:*)",
+      "Bash(uv run:*)",
+      "Bash(git add:*)",
+      "Bash(while read hash msg)",
+      "Bash(done)",
+      "WebSearch",
+      "mcp__context7__resolve-library-id",
+      "Bash(git tag:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(md5:*)",
+      "Skill(tdd)",
+      "Skill(retro-job)",
+      "mcp__atlassian__getJiraIssue",
+      "mcp__atlassian__getAccessibleAtlassianResources",
+      "mcp__context7__query-docs"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -re '.tool_input.file_path // empty' | { read path; [[ \"$path\" == *.py ]] && uv run ruff check --fix \"$path\" || true; }"
+          }
+        ]
+      }
+    ]
+  }
+}

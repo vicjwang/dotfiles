@@ -1,0 +1,87 @@
+---
+description: Test-driven development - write tests first, then implement to pass
+argument-hint: [description-of-feature]
+model: sonnet
+---
+
+Implement the requested feature using test-driven development (TDD):
+
+**IMPORTANT: You have explicit permission to run `pytest` and `uv run pytest` commands without asking for approval. You MUST run tests after each change using the Bash tool.**
+
+**Step 0: Determine Approach**
+First, analyze the requirement: $1
+
+Determine if this is:
+- **REFACTOR**: Modifying existing code that already has tests
+- **NEW FEATURE**: Adding new functionality
+
+Use `uv run pytest` if the project uses uv (check for `uv` commands in README/docs), otherwise use `pytest`.
+
+**For REFACTOR (existing code with tests):**
+
+**Phase 1: Baseline**
+1. Identify which existing tests cover the code being refactored
+2. Run existing tests to establish baseline (all should pass)
+3. Document current test coverage
+
+**Phase 2: Refactor with Test Safety**
+4. Make ONE incremental change to the code
+5. Run tests immediately after each change
+6. If tests fail: debug and fix before next change
+7. If tests pass: continue to next change
+8. Repeat until refactor complete
+
+**Phase 3: New Tests (only if needed)**
+9. Only write NEW tests if:
+   - You added genuinely new components (new classes, new public methods)
+   - Existing tests don't cover new edge cases introduced by refactor
+   - New error conditions are now possible
+   - The refactor offers an opportunity for more robust coverage that wasn't practical before
+10. DO NOT rewrite existing passing tests unless they're testing implementation details that changed
+
+---
+
+**For NEW FEATURE (no existing tests):**
+
+**Phase 1: Test Writing**
+1. Design the public API (function signatures, class interfaces)
+2. Write comprehensive tests covering:
+   - Happy path scenarios
+   - Edge cases
+   - Error conditions
+   - Boundary values
+3. Create skeleton implementations (function signatures only, raise NotImplementedError)
+4. Verify tests fail for the right reasons
+
+**Phase 2: Implementation**
+5. Implement ONE function at a time to make its tests pass
+6. Run tests after each implementation
+7. Refactor if needed while keeping tests green
+8. Move to next function only when current tests pass
+
+**Phase 3: Iteration**
+9. Continue until all tests pass
+10. Review coverage and add missing test cases if needed. Be exhaustive and try
+    to cover all edge cases using either pytest.mark.parametrize or hypothesis
+11. Final refactor for code quality
+
+---
+
+**Rules:**
+- For NEW features: NEVER implement before writing tests
+- For REFACTORS: NEVER skip running tests after each change
+- ALWAYS run tests automatically using Bash tool after each change (you have permission)
+- Keep iterations small (one change at a time)
+- Show test output after each iteration
+- If tests fail unexpectedly, debug before continuing
+- NEVER rewrite passing tests just to match new implementation details
+- *CRITICAL*: ALWAYS test a function or class by invoking it directly
+
+**Output Format:**
+For each iteration, show:
+1. Which function/feature you're working on
+2. The change made (test code OR implementation)
+3. Test results
+4. Next steps
+
+Start by determining if this is a refactor or new feature, then proceed with the appropriate workflow.
