@@ -1,0 +1,151 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed:*)",
+      "Read(~/.claude/**)",
+      "Edit(~/.claude/**)",
+      "Write(~/.claude/**)",
+      "Bash(ls:*)",
+      "Bash(git show:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(grep:*)",
+      "WebFetch",
+      "Search(*)",
+      "WebSearch",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(git diff:*)",
+      "Bash(echo:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(fd:*)",
+      "Bash(tokei:*)",
+      "Bash(jq:*)",
+      "Bash(sort:*)",
+      "Bash(rg:*)",
+      "Bash(tree:*)",
+      "Bash(sd:*)",
+      "Bash(mkdir:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(git log:*)",
+      "Bash(uv run:*)",
+      "Bash(git add:*)",
+      "Bash(while read hash msg)",
+      "Bash(done)",
+      "mcp__context7__resolve-library-id",
+      "Bash(git tag:*)",
+      "Bash(cat:*)",
+      "Bash(md5:*)",
+      "Skill(tdd)",
+      "Skill(retro-job)",
+      "Bash(cut:*)",
+      "Bash(ast-grep:*)"
+    ],
+    "deny": [
+      "Read(*/*config.ini)",
+      "Read(*/*config.json)",
+      "Read(*/*config.yaml)",
+      "Read(*/.env)",
+      "Read(*/.env.*)",
+      "Read(*/secrets/**)",
+      "Read(*/config/credentials.json)",
+      "Read(*/build)",
+      "Read(*/*.un~)",
+      "Read(~/.bashrc)",
+      "Read(~/.bash_profile)",
+      "Read(~/.zshrc)",
+      "Read(~/.zsh_history)",
+      "Read(~/.bash_history)",
+      "Read(~/.profile)",
+      "Read(~/.zprofile)",
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.netrc)",
+      "Read(~/.git-credentials)",
+      "Read(~/.gitconfig)",
+      "Read(**/credentials)",
+      "Read(**/secrets.yml)",
+      "Read(**/secrets.yaml)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(**/*_rsa)",
+      "Read(**/*_dsa)",
+      "Read(**/*_ecdsa)",
+      "Read(**/*_ed25519)",
+      "Read(~/Library/Keychains/**)",
+      "Read(**/token)",
+      "Read(**/authToken)",
+      "Read(~/.pypirc)",
+      "Read(~/.npmrc)",
+      "Bash(cat ~/.bashrc*)",
+      "Bash(. ~/.bash_profile)",
+      "Bash(. ~/.bashrc)",
+      "Bash(source ~/.bash_profile)",
+      "Bash(source ~/.bashrc)",
+      "Bash(cat ~/.zshrc*)",
+      "Bash(cat ~/.ssh/*)",
+      "Bash(cat ~/.aws/*)",
+      "Bash(cat */.env*)",
+      "Bash(cat */secrets/*)",
+      "Bash(cat **/*.pem)",
+      "Bash(cat **/*.key)"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset --hard:*)"
+    ],
+    "defaultMode": "plan"
+  },
+  "model": "sonnet",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude needs permission\" with title \"🔔 Permission Required\" sound name \"Funk\"'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/opus_permission_validator.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/shell_rules.py",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-default.sh"
+  },
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true
+}
